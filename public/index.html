@@ -1228,8 +1228,8 @@ function renderHome() {
     <div class="hourly-wrap">
       <div class="hourly-label-bar">
         <div class="hourly-hl">Today</div>
-        ${tomorrowChips ? `<div class="hourly-hl" style="transform:translateX(100%)">Tomorrow</div>` : ''}
-        ${dayAfterChips ? `<div class="hourly-hl" style="transform:translateX(100%)">${dayAfterName}</div>` : ''}
+        ${tomorrowChips ? `<div class="hourly-hl" style="left:100%">Tomorrow</div>` : ''}
+        ${dayAfterChips ? `<div class="hourly-hl" style="left:100%">${dayAfterName}</div>` : ''}
       </div>
       <div class="hourly-scroll">${hourlyHTML}</div>
     </div>
@@ -1280,11 +1280,10 @@ function renderHome() {
         if (!g) return;
         const arrive = i === 0 ? 1 : Math.max(0, Math.min(1, (sl - (g.offsetLeft - ZONE)) / ZONE));
         const depart = nextG ? Math.max(0, Math.min(1, (sl - (nextG.offsetLeft - ZONE)) / ZONE)) : 0;
-        lbl.style.transform = `translateX(${(1 - arrive - depart) * 100}%)`;
+        lbl.style.left = `${(1 - arrive - depart) * 100}%`;
       });
     };
     hScroll.addEventListener('scroll', updateLabels, { passive: true });
-    updateLabels();
   }
 }
 
