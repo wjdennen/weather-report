@@ -555,7 +555,6 @@ html, body {
   <div class="screens">
     <div id="screen-home" class="screen active"></div>
     <div id="screen-forecast" class="screen"></div>
-    <div id="screen-tides" class="screen"></div>
     <div id="screen-search" class="screen"></div>
   </div>
 
@@ -566,9 +565,6 @@ html, body {
     </button>
     <button class="nav-tab" data-tab="forecast" onclick="App.switchTab('forecast')">
       <span class="msym">wb_sunny</span>Forecast
-    </button>
-    <button class="nav-tab" data-tab="tides" onclick="App.switchTab('tides')">
-      <span class="msym">waves</span>Tides
     </button>
     <button class="nav-tab" data-tab="search" onclick="App.switchTab('search')">
       <span class="msym">search</span>Search
@@ -844,7 +840,6 @@ async function loadLocation(lat, lon, name, isGeo = false) {
 
   renderHome();
   renderForecast();
-  renderTides();
 
   try {
     const weather = await fetchWeather(lat, lon);
@@ -853,16 +848,16 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
     renderForecast();
-    renderTides();
 
-    // Load tides in background
+    // Load tides in background; re-render home when data arrives
     findNearestStation(lat, lon).then(async station => {
-      if (!station) { renderTides(); return; }
+      if (!station) { if (state.tab === 'home') renderHome(); return; }
       state.tideStation = station;
+      if (state.tab === 'home') renderHome();
       try {
         state.tides = await fetchTides(station.id);
       } catch { state.tides = null; }
-      if (state.tab === 'tides') renderTides();
+      if (state.tab === 'home') renderHome();
     });
 
   } catch(e) {
@@ -1031,6 +1026,95 @@ function renderHome() {
   const vis = c.visibility != null ? `${round(c.visibility / 1609)}mi` : '—';
   const gusts = round(c.wind_gusts_10m);
 
+  // Sun section
+  const sr = w.daily.sunrise[0];
+  const ss = w.daily.sunset[0];
+  const srDate = new Date(sr), ssDate = new Date(ss);
+  const daylightMs = ssDate - srDate;
+  const daylightH = Math.floor(daylightMs / 3600000);
+  const daylightM = Math.floor((daylightMs % 3600000) / 60000);
+  const noon = new Date((srDate.getTime() + ssDate.getTime()) / 2);
+
+  const sunHTML = `
+    <div class="section-heading">Sun</div>
+    <div class="sun-card">
+      <div class="sun-arc-wrap">${sunArcSVG(sr, ss)}</div>
+      <div class="sun-times-row">
+        <div class="sun-time-block">
+          <div class="sun-time-label">${msym('wb_twilight','font-size:14px;color:var(--tertiary)')} Sunrise</div>
+          <div class="sun-time-val">${fmt12(srDate)}</div>
+        </div>
+        <div class="sun-time-block" style="text-align:right">
+          <div class="sun-time-label">${msym('wb_twilight','font-size:14px;color:var(--tertiary)')} Sunset</div>
+          <div class="sun-time-val">${fmt12(ssDate)}</div>
+        </div>
+      </div>
+      <div class="sun-stats-row">
+        <div class="sun-stat">
+          <div class="sun-stat-label">${msym('light_mode')} Daylight</div>
+          <div class="sun-stat-val">${daylightH}h ${daylightM}m</div>
+        </div>
+        <div class="sun-stat">
+          <div class="sun-stat-label">${msym('schedule')} Solar Noon</div>
+          <div class="sun-stat-val">${fmt12(noon)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Tide section
+  let tideHTML = '';
+  let tideCredit = '';
+  if (!state.stations) {
+    tideHTML = `
+      <div class="section-heading">Tides</div>
+      <div class="loading-state" style="min-height:120px">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Finding nearest tide station…</div>
+      </div>`;
+  } else if (!state.tideStation) {
+    tideHTML = `
+      <div class="section-heading">Tides</div>
+      <div class="no-tides">
+        ${msym('waves')}
+        <p>No NOAA tide station found within 150 miles of this location.</p>
+        <p style="margin-top:8px;font-size:13px">Tide data covers US coastal areas.</p>
+      </div>`;
+  } else if (!state.tides) {
+    tideHTML = `
+      <div class="section-heading">Tides</div>
+      <div class="loading-state" style="min-height:120px">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading tides…</div>
+      </div>`;
+  } else {
+    const { hilo, hourly } = state.tides;
+    const station = state.tideStation;
+    const hiTides = hilo.filter(p => p.type === 'H');
+    const loTides = hilo.filter(p => p.type === 'L');
+    const chartHTML = hourly.length ? `
+      <div class="tide-chart-card">
+        <div class="card-label">Today's Tide Curve</div>
+        <div class="tide-chart-wrap">${tideChartSVG(hourly, now)}</div>
+      </div>` : '';
+    tideCredit = ` · Tides by <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA CO-OPS</a>`;
+    tideHTML = `
+      <div class="section-heading-row">
+        <div class="section-heading" style="margin:0">Tides</div>
+        <div class="station-name-sm">${station.name}${station.state ? ', ' + station.state : ''} · ${station.dist}mi</div>
+      </div>
+      ${chartHTML}
+      <div class="tide-times-grid">
+        ${tideCard(hiTides[0], true)}
+        ${tideCard(loTides[0], false)}
+        ${tideCard(hiTides[1] || null, true)}
+        ${tideCard(loTides[1] || null, false)}
+      </div>
+      <div class="tide-disclaimer">
+        ${msym('info')}
+        <p>Tidal information is based on the nearest NOAA reference station. Actual water levels may vary based on barometric pressure and wind conditions.</p>
+      </div>`;
+  }
+
   el.innerHTML = `
     <div class="hero">
       <div class="condition-label">${wt(code)}</div>
@@ -1067,8 +1151,11 @@ function renderHome() {
       </div>
     </div>
 
+    ${sunHTML}
+    ${tideHTML}
+
     <div class="powered-by">
-      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · by <strong>Clam Code</strong>
+      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit} · by <strong>Clam Code</strong>
     </div>`;
 }
 
@@ -1189,147 +1276,17 @@ function renderForecast() {
     <div class="powered-by">Forecast by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>`;
 }
 
-/* ═══════════════════════════════
-   RENDER: TIDES
-═══════════════════════════════ */
-function renderTides() {
-  const el = document.getElementById('screen-tides');
-  const now = new Date();
-
-  // Sun section (from Open-Meteo daily data)
-  let sunHTML = '';
-  if (state.weather) {
-    const sr = state.weather.daily.sunrise[0];
-    const ss = state.weather.daily.sunset[0];
-    const srDate = new Date(sr), ssDate = new Date(ss);
-    const daylightMs = ssDate - srDate;
-    const daylightH = Math.floor(daylightMs / 3600000);
-    const daylightM = Math.floor((daylightMs % 3600000) / 60000);
-    const noon = new Date((srDate.getTime() + ssDate.getTime()) / 2);
-    const uv = round(state.weather.daily.uv_index_max[0] || 0);
-    const srFmt = fmt12(srDate);
-    const ssFmt = fmt12(ssDate);
-
-    sunHTML = `
-      <div class="section-heading">Sun</div>
-      <div class="sun-card">
-        <div class="sun-arc-wrap">${sunArcSVG(sr, ss)}</div>
-        <div class="sun-times-row">
-          <div class="sun-time-block">
-            <div class="sun-time-label">${msym('wb_twilight','font-size:14px;color:var(--tertiary)')} Sunrise</div>
-            <div class="sun-time-val">${srFmt}</div>
-          </div>
-          <div class="sun-time-block" style="text-align:right">
-            <div class="sun-time-label">${msym('wb_twilight','font-size:14px;color:var(--tertiary)')} Sunset</div>
-            <div class="sun-time-val">${ssFmt}</div>
-          </div>
-        </div>
-        <div class="sun-stats-row">
-          <div class="sun-stat">
-            <div class="sun-stat-label">${msym('light_mode')} Daylight</div>
-            <div class="sun-stat-val">${daylightH}h ${daylightM}m</div>
-          </div>
-          <div class="sun-stat">
-            <div class="sun-stat-label">${msym('schedule')} Solar Noon</div>
-            <div class="sun-stat-val">${fmt12(noon)}</div>
-          </div>
-        </div>
-      </div>
-      <div class="uv-row">
-        <div class="uv-left">
-          ${msym('wb_sunny')}
-          <div>
-            <div class="uv-label">UV Index</div>
-            <div class="uv-val" style="color:${uvColor(uv)}">${uvText(uv)} (${uv})</div>
-          </div>
-        </div>
-        <div class="uv-chevron">${msym('chevron_right')}</div>
-      </div>`;
-  }
-
-  // No weather yet
-  if (!state.weather) {
-    el.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Loading tides…</div></div>`;
-    return;
-  }
-
-  // No tide station
-  if (!state.tideStation && state.stations) {
-    el.innerHTML = `
-      <div class="section-heading">Tides &amp; Sun</div>
-      <div class="no-tides">
-        ${msym('waves')}
-        <p>No NOAA tide station found within 150 miles of this location.</p>
-        <p style="margin-top:8px;font-size:13px">Tide data covers US coastal areas.</p>
-      </div>
-      ${sunHTML}
-      <div class="powered-by">Tides by <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA CO-OPS</a></div>`;
-    return;
-  }
-
-  // Loading tides
-  if (!state.tideStation || !state.tides) {
-    el.innerHTML = `
-      <div class="section-heading">Tides &amp; Sun</div>
-      <div class="loading-state" style="min-height:200px">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Finding nearest tide station…</div>
-      </div>
-      ${sunHTML}`;
-    return;
-  }
-
-  const { hilo, hourly } = state.tides;
-  const station = state.tideStation;
-
-  // Build tide time cards
-  const hiTides = hilo.filter(p => p.type === 'H');
-  const loTides = hilo.filter(p => p.type === 'L');
-  const allTides = [...hilo].sort((a,b) => a.t < b.t ? -1 : 1);
-
-  function tideCard(tide, isHigh) {
-    if (!tide) return `<div class="tide-time-card"><div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div><div class="tide-time-info"><div class="tide-type-label">${isHigh?'High':'Low'} Tide</div><div class="tide-time-val">—</div></div></div>`;
-    const d = new Date(tide.t.replace(' ','T'));
-    const timeStr = fmt12(d);
-    return `<div class="tide-time-card">
-      <div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div>
-      <div class="tide-time-info">
-        <div class="tide-type-label">${isHigh?'High':'Low'} Tide</div>
-        <div class="tide-time-val">${timeStr}</div>
-        <div class="tide-height-val">${parseFloat(tide.v).toFixed(1)} ft</div>
-      </div>
-    </div>`;
-  }
-
-  const tidesGridHTML = `
-    <div class="tide-times-grid">
-      ${tideCard(hiTides[0], true)}
-      ${tideCard(loTides[0], false)}
-      ${tideCard(hiTides[1] || null, true)}
-      ${tideCard(loTides[1] || null, false)}
-    </div>`;
-
-  const chartHTML = hourly.length ? `
-    <div class="tide-chart-card">
-      <div class="card-label">Today's Tide Curve</div>
-      <div class="tide-chart-wrap">${tideChartSVG(hourly, now)}</div>
-    </div>` : '';
-
-  el.innerHTML = `
-    <div class="section-heading-row">
-      <div class="section-heading" style="margin:0">Tides</div>
-      <div class="station-name-sm">${station.name}${station.state ? ', ' + station.state : ''} · ${station.dist}mi</div>
+function tideCard(tide, isHigh) {
+  if (!tide) return `<div class="tide-time-card"><div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div><div class="tide-time-info"><div class="tide-type-label">${isHigh?'High':'Low'} Tide</div><div class="tide-time-val">—</div></div></div>`;
+  const d = new Date(tide.t.replace(' ','T'));
+  return `<div class="tide-time-card">
+    <div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div>
+    <div class="tide-time-info">
+      <div class="tide-type-label">${isHigh?'High':'Low'} Tide</div>
+      <div class="tide-time-val">${fmt12(d)}</div>
+      <div class="tide-height-val">${parseFloat(tide.v).toFixed(1)} ft</div>
     </div>
-    ${chartHTML}
-    ${tidesGridHTML}
-
-    ${sunHTML}
-
-    <div class="tide-disclaimer">
-      ${msym('info')}
-      <p>Tidal information is based on the nearest NOAA reference station. Actual water levels may vary based on barometric pressure and wind conditions.</p>
-    </div>
-    <div class="powered-by">Tides by <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA CO-OPS</a> · Sun by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>`;
+  </div>`;
 }
 
 /* ═══════════════════════════════
@@ -1433,7 +1390,6 @@ const App = {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${tab}`));
     if (tab === 'search') renderSearch();
-    else if (tab === 'tides') renderTides();
     else if (tab === 'home') renderHome();
     else if (tab === 'forecast') renderForecast();
   },
