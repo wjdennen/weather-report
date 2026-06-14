@@ -6,7 +6,8 @@ A PWA weather app for current conditions, 7-day forecasts, tides, and sun info �
 
 - **Current conditions** — temperature, feels like, hi/lo, condition icon, hourly 24-hour scroll, wind, humidity, UV index, visibility
 - **Atmospheric background** — gradient shifts dynamically based on weather condition and time of day
-- **7-day forecast** — condition icons, temperature range bars, auto-generated outlook summary, and a Planner's View best-day picker
+- **Detailed forecast** — NWS paragraph-form forecast for the current period on the Home tab (e.g. "This Afternoon: Mostly cloudy, with a high near 87…"); tap any day row on the Forecast tab to expand its full NWS text; US locations only, silently skipped otherwise
+- **7-day forecast** — condition icons, temperature range bars, sunrise/sunset times per day, auto-generated outlook summary, and a Planner's View best-day picker
 - **Tides** — nearest NOAA tide station (within 150 mi), today's tide curve as a smooth SVG chart, high/low tide times and heights; stations that only have hi/lo data get sinusoidal interpolation for the chart
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc, UV index
 - **Location search** — search by city name or US zip code, save multiple locations, persistent in localStorage
@@ -22,6 +23,7 @@ A PWA weather app for current conditions, 7-day forecasts, tides, and sun info �
 | City/location search | [Open-Meteo Geocoding](https://geocoding-api.open-meteo.com/) |
 | US zip code lookup | [Zippopotam.us](https://api.zippopotam.us/) |
 | Reverse geocoding (GPS → city name) | [BigDataCloud](https://api.bigdatacloud.net/) |
+| Detailed text forecasts (US only) | [NOAA NWS API](https://api.weather.gov/) |
 | Tide station list | Bundled `public/stations.json` (~3,450 NOAA stations) |
 
 ## Stack
