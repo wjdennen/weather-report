@@ -1421,7 +1421,14 @@ const App = {
 
   async useGeo() {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser. Please search for a location instead.');
+      App.switchTab('home');
+      document.getElementById('screen-home').innerHTML = `
+        <div class="geo-prompt">
+          ${msym('location_off')}
+          <h2>Location Not Supported</h2>
+          <p>Your browser doesn't support geolocation. Search for a city instead.</p>
+          <button class="btn-primary" onclick="App.goSearch()">Search Locations</button>
+        </div>`;
       return;
     }
     App.switchTab('home');
@@ -1437,28 +1444,48 @@ const App = {
         </div>`;
     };
 
+    // Check permission state up-front if Permissions API is available.
+    // On Chrome desktop this returns 'denied' immediately for previously-blocked
+    // sites, letting us bail out without waiting for getCurrentPosition to timeout.
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        if (perm.state === 'denied') {
+          showGeoError('Location permission is blocked. Enable it in your browser settings, or search for a city instead.');
+          return;
+        }
+      } catch(e) { /* Permissions API unsupported — continue */ }
+    }
+
     let settled = false;
-    // Chrome on iOS sometimes never fires the error callback when the permission
-    // prompt is dismissed — this fallback catches that silent hang.
-    const fallback = setTimeout(() => {
-      if (!settled) { settled = true; showGeoError('Location timed out. Search for a city instead.'); }
-    }, 12000);
+    // Fallback timer: Chrome on iOS sometimes never fires the error callback when
+    // the OS permission prompt is dismissed without an explicit Allow/Deny tap.
+    const settle = (fn) => { if (!settled) { settled = true; fn(); } };
+    const fallback = setTimeout(() => settle(() =>
+      showGeoError('Location timed out. Search for a city instead.')
+    ), 12000);
 
     navigator.geolocation.getCurrentPosition(async pos => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(fallback);
-      const { latitude: lat, longitude: lon } = pos.coords;
-      const name = await reverseGeocode(lat, lon) || 'Current Location';
-      loadLocation(lat, lon, name, true);
+      settle(async () => {
+        clearTimeout(fallback);
+        try {
+          const { latitude: lat, longitude: lon } = pos.coords;
+          const name = await reverseGeocode(lat, lon) || 'Current Location';
+          loadLocation(lat, lon, name, true);
+        } catch(e) {
+          showGeoError('Location error. Search for a city instead.');
+        }
+      });
     }, err => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(fallback);
-      const msg = err.code === 1 ? 'Location permission denied. Search for a city instead.' :
-                  err.code === 2 ? 'Location unavailable. Search for a city instead.' :
-                                   'Location timed out. Search for a city instead.';
-      showGeoError(msg);
+      settle(() => {
+        clearTimeout(fallback);
+        const msg = err.code === 1
+          ? 'Location permission denied. Enable it in your browser settings, or search for a city instead.'
+          : err.code === 2
+          ? 'Location unavailable. Try again later, or search for a city instead.'
+          : 'Location timed out. Search for a city instead.';
+        showGeoError(msg);
+      });
     }, { timeout: 10000, maximumAge: 300000 });
   },
 
