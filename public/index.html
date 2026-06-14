@@ -216,10 +216,10 @@ html, body {
 
 /* Hourly scroll */
 .hourly-wrap { margin-bottom: 14px; }
-.hourly-active-label {
+.hourly-group-label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--tertiary);
-  padding: 0 2px; margin-bottom: 8px; min-height: 14px;
+  padding: 0 2px;
 }
 .hourly-scroll {
   display: flex; gap: 0;
@@ -1088,13 +1088,16 @@ function renderHome() {
   for (let i = 48; i < 60; i++) dayAfterChips += buildHourlyChip(i, false);
 
   const hourlyHTML = `
-    <div class="hourly-day-group" data-label="Today">
+    <div class="hourly-day-group">
+      <div class="hourly-group-label">Today</div>
       <div class="hourly-chips-row">${todayChips}</div>
     </div>
-    ${tomorrowChips ? `<div class="hourly-day-group" data-label="Tomorrow">
+    ${tomorrowChips ? `<div class="hourly-day-group">
+      <div class="hourly-group-label">Tomorrow</div>
       <div class="hourly-chips-row">${tomorrowChips}</div>
     </div>` : ''}
-    ${dayAfterChips ? `<div class="hourly-day-group" data-label="${dayAfterName}">
+    ${dayAfterChips ? `<div class="hourly-day-group">
+      <div class="hourly-group-label">${dayAfterName}</div>
       <div class="hourly-chips-row">${dayAfterChips}</div>
     </div>` : ''}`;
 
@@ -1222,7 +1225,6 @@ function renderHome() {
     </div>
 
     <div class="hourly-wrap">
-      <div class="hourly-active-label" id="hourly-active-label">Today</div>
       <div class="hourly-scroll">${hourlyHTML}</div>
     </div>
 
@@ -1258,21 +1260,6 @@ function renderHome() {
       Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit} · by <strong>Clam Code</strong>
     </div>`;
 
-  // Sticky hourly label — updates as user swipes through day groups
-  const hourlyScroll = el.querySelector('.hourly-scroll');
-  const hourlyLabel  = el.querySelector('#hourly-active-label');
-  if (hourlyScroll && hourlyLabel) {
-    const groups = [...hourlyScroll.querySelectorAll('.hourly-day-group[data-label]')];
-    if (groups.length > 1) {
-      hourlyScroll.addEventListener('scroll', () => {
-        let lbl = groups[0].dataset.label;
-        for (const g of groups) {
-          if (g.offsetLeft <= hourlyScroll.scrollLeft) lbl = g.dataset.label;
-        }
-        if (hourlyLabel.textContent !== lbl) hourlyLabel.textContent = lbl;
-      }, { passive: true });
-    }
-  }
 }
 
 function renderHomeError(msg) {
