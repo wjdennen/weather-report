@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Atmosphere - Search &amp; Locations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#c4e7ff",
+                    "secondary": "#bec6e0",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-tertiary": "#472a00",
+                    "tertiary-container": "#f1a02b",
+                    "surface-container-high": "#252b2e",
+                    "primary": "#8ed5ff",
+                    "surface-container": "#1b2024",
+                    "on-background": "#dee3e8",
+                    "surface-variant": "#303539",
+                    "primary-container": "#38bdf8",
+                    "secondary-fixed": "#dae2fd",
+                    "inverse-surface": "#dee3e8",
+                    "on-surface-variant": "#bdc8d1",
+                    "secondary-container": "#3f465c",
+                    "outline": "#87929a",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#0a0f12",
+                    "error": "#ffb4ab",
+                    "tertiary": "#ffc176",
+                    "surface-container-highest": "#303539",
+                    "on-primary": "#00354a",
+                    "surface-tint": "#7bd0ff",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary-container": "#004965",
+                    "surface-bright": "#343a3e",
+                    "tertiary-fixed-dim": "#ffb960",
+                    "surface": "#0f1418",
+                    "inverse-on-surface": "#2c3135",
+                    "error-container": "#93000a",
+                    "primary-fixed-dim": "#7bd0ff",
+                    "on-primary-fixed-variant": "#004c69",
+                    "secondary-fixed-dim": "#bec6e0",
+                    "on-secondary-container": "#adb4ce",
+                    "on-secondary": "#283044",
+                    "surface-container-low": "#171c20",
+                    "inverse-primary": "#00668a",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "background": "#0f1418",
+                    "on-secondary-fixed-variant": "#3f465c",
+                    "on-surface": "#dee3e8",
+                    "outline-variant": "#3e484f",
+                    "surface-dim": "#0f1418",
+                    "on-tertiary-container": "#613b00",
+                    "on-secondary-fixed": "#131b2e",
+                    "on-primary-fixed": "#001e2c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "glass-padding": "1.25rem",
+                    "container-padding": "1.5rem",
+                    "stack-gap": "1rem",
+                    "grid-gutter": "1rem",
+                    "section-gap": "2rem",
+                    "safe-area-top": "env(safe-area-inset-top)"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "display-temp-mobile": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-temp": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-temp-mobile": ["72px", {"lineHeight": "80px", "fontWeight": "200"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-temp": ["96px", {"lineHeight": "100px", "letterSpacing": "-0.04em", "fontWeight": "200"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0f1418;
+            color: #dee3e8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-module {
+            backdrop-filter: blur(20px);
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card-hover:active {
+            transform: scale(0.98);
+            transition: transform 0.2s ease;
+        }
+        .search-focus:focus-within {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(142, 213, 255, 0.4);
+        }
+        .weather-gradient-london {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 20, 24, 0.8) 100%);
+        }
+        .weather-gradient-ny {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(15, 20, 24, 0.8) 100%);
+        }
+        .weather-gradient-tokyo {
+            background: linear-gradient(135deg, rgba(241, 160, 43, 0.2) 0%, rgba(15, 20, 24, 0.8) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- Atmospheric Background Animation -->
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-white/10 border-b border-white/20 flex justify-between items-center px-container-padding py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<h1 class="text-on-surface font-headline-md text-headline-md">Current Location</h1>
+</div>
+<button class="active:scale-95 transition-transform hover:opacity-80">
+<span class="material-symbols-outlined text-primary">add</span>
+</button>
+</header>
+<main class="pt-24 px-container-padding space-y-section-gap max-w-2xl mx-auto">
+<!-- Search Section -->
+<section class="space-y-stack-gap">
+<div class="glass-module search-focus flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+<input class="bg-transparent border-none outline-none w-full text-body-md font-body-md placeholder:text-on-surface-variant/70 focus:ring-0 p-0" placeholder="Search by city or zip code" type="text"/>
+</div>
+</section>
+<!-- Saved Locations -->
+<section class="space-y-stack-gap">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-on-surface font-label-caps text-label-caps uppercase tracking-widest opacity-60">Locations</h2>
+<span class="text-primary font-label-sm text-label-sm">Manage</span>
+</div>
+<!-- Current Location Card (Top Priority) -->
+<div class="glass-module glass-card-hover relative overflow-hidden rounded-2xl p-glass-padding group cursor-pointer transition-all">
+<div class="absolute inset-0 weather-gradient-ny opacity-50 group-hover:opacity-70 transition-opacity"></div>
+<div class="relative flex justify-between items-start">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">near_me</span>
+<p class="text-on-surface font-headline-md text-headline-md">San Francisco</p>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md">Partly Cloudy</p>
+<div class="mt-4 flex gap-3">
+<span class="text-on-surface-variant font-label-sm text-label-sm">H: 72°</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">L: 58°</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-primary font-display-temp-mobile text-display-temp-mobile">68°</p>
+<span class="material-symbols-outlined text-on-surface-variant text-4xl mt-2">partly_cloudy_day</span>
+</div>
+</div>
+</div>
+<!-- London Card -->
+<div class="glass-module glass-card-hover relative overflow-hidden rounded-2xl p-glass-padding group cursor-pointer transition-all">
+<div class="absolute inset-0 weather-gradient-london opacity-50 group-hover:opacity-70 transition-opacity"></div>
+<div class="relative flex justify-between items-start">
+<div>
+<p class="text-on-surface font-headline-md text-headline-md mb-1">London</p>
+<p class="text-on-surface-variant font-body-md text-body-md">Light Rain</p>
+<div class="mt-4 flex gap-3">
+<span class="text-on-surface-variant font-label-sm text-label-sm">H: 64°</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">L: 52°</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface font-display-temp-mobile text-display-temp-mobile">58°</p>
+<span class="material-symbols-outlined text-on-surface-variant text-4xl mt-2">rainy</span>
+</div>
+</div>
+</div>
+<!-- New York Card -->
+<div class="glass-module glass-card-hover relative overflow-hidden rounded-2xl p-glass-padding group cursor-pointer transition-all">
+<div class="absolute inset-0 weather-gradient-ny opacity-50 group-hover:opacity-70 transition-opacity"></div>
+<div class="relative flex justify-between items-start">
+<div>
+<p class="text-on-surface font-headline-md text-headline-md mb-1">New York</p>
+<p class="text-on-surface-variant font-body-md text-body-md">Sunny</p>
+<div class="mt-4 flex gap-3">
+<span class="text-on-surface-variant font-label-sm text-label-sm">H: 82°</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">L: 68°</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface font-display-temp-mobile text-display-temp-mobile">79°</p>
+<span class="material-symbols-outlined text-on-surface-variant text-4xl mt-2">sunny</span>
+</div>
+</div>
+</div>
+<!-- Tokyo Card -->
+<div class="glass-module glass-card-hover relative overflow-hidden rounded-2xl p-glass-padding group cursor-pointer transition-all">
+<div class="absolute inset-0 weather-gradient-tokyo opacity-50 group-hover:opacity-70 transition-opacity"></div>
+<div class="relative flex justify-between items-start">
+<div>
+<p class="text-on-surface font-headline-md text-headline-md mb-1">Tokyo</p>
+<p class="text-on-surface-variant font-body-md text-body-md">Clear Night</p>
+<div class="mt-4 flex gap-3">
+<span class="text-on-surface-variant font-label-sm text-label-sm">H: 78°</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">L: 70°</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface font-display-temp-mobile text-display-temp-mobile">74°</p>
+<span class="material-symbols-outlined text-on-surface-variant text-4xl mt-2">clear_night</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Aesthetic Imagery Decor -->
+<section class="py-8">
+<div class="relative w-full aspect-video rounded-3xl overflow-hidden glass-module border-0">
+<img class="w-full h-full object-cover opacity-60" data-alt="A cinematic, ultra-wide landscape shot of misty mountains under a moonlit sky. The colors are deep indigo and soft periwinkle, matching the ethereal weather app aesthetic. The atmosphere is calm and vast, featuring crisp details of pine forests blanketed in a thin layer of translucent fog under a bright, high-contrast moon." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdC2NCiTjCVeEyv_jJ0fFq85OWZyP0N5ZViSPL5QWLOcaRJN70thpoGd0ydul_l1bE_uwJj6eMXumIxbCXKWyCPQ0T3fE0t7jxE_eP_8_dS1XvF0e9iJ4UamWjKr-6sdTO4BB7uuIe1vaJcX2CH6kP6pH-I8eZJYHBuRDj0jFoUyacLLXBex7eoBvLsKRsoiq7Rw-BSpLap3hAR6SEGjHuJ1BJcofxa6y3uwBXOjTZ6VKrSZB6S4WB9utiK4ADks3VGBYI43PHryg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<p class="font-headline-md text-headline-md text-white mb-2">Explore the Horizon</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Global weather insights at your fingertips.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-2 backdrop-blur-xl bg-white/10 border-t border-white/20">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">wb_sunny</span>
+<span class="font-label-sm text-label-sm">Forecast</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">hide</span>
+<span class="font-label-sm text-label-sm">Tides</span>
+</a>
+<!-- ACTIVE TAB: Search -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-label-sm text-label-sm">Search</span>
+</a>
+</nav>
+<script>
+        // Simple Micro-interaction for the search input
+        const searchInput = document.querySelector('input[type="text"]');
+        const glassModules = document.querySelectorAll('.glass-card-hover');
+
+        searchInput.addEventListener('focus', () => {
+            console.log('Searching...');
+        });
+
+        glassModules.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            });
+        });
+    </script>
+</body></html>

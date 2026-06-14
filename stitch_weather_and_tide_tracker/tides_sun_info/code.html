@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tides &amp; Sun</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#c4e7ff",
+                    "secondary": "#bec6e0",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-tertiary": "#472a00",
+                    "tertiary-container": "#f1a02b",
+                    "surface-container-high": "#252b2e",
+                    "primary": "#8ed5ff",
+                    "surface-container": "#1b2024",
+                    "on-background": "#dee3e8",
+                    "surface-variant": "#303539",
+                    "primary-container": "#38bdf8",
+                    "secondary-fixed": "#dae2fd",
+                    "inverse-surface": "#dee3e8",
+                    "on-surface-variant": "#bdc8d1",
+                    "secondary-container": "#3f465c",
+                    "outline": "#87929a",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#0a0f12",
+                    "error": "#ffb4ab",
+                    "tertiary": "#ffc176",
+                    "surface-container-highest": "#303539",
+                    "on-primary": "#00354a",
+                    "surface-tint": "#7bd0ff",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary-container": "#004965",
+                    "surface-bright": "#343a3e",
+                    "tertiary-fixed-dim": "#ffb960",
+                    "surface": "#0f1418",
+                    "inverse-on-surface": "#2c3135",
+                    "error-container": "#93000a",
+                    "primary-fixed-dim": "#7bd0ff",
+                    "on-primary-fixed-variant": "#004c69",
+                    "secondary-fixed-dim": "#bec6e0",
+                    "on-secondary-container": "#adb4ce",
+                    "on-secondary": "#283044",
+                    "surface-container-low": "#171c20",
+                    "inverse-primary": "#00668a",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "background": "#0f1418",
+                    "on-secondary-fixed-variant": "#3f465c",
+                    "on-surface": "#dee3e8",
+                    "outline-variant": "#3e484f",
+                    "surface-dim": "#0f1418",
+                    "on-tertiary-container": "#613b00",
+                    "on-secondary-fixed": "#131b2e",
+                    "on-primary-fixed": "#001e2c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "glass-padding": "1.25rem",
+                    "container-padding": "1.5rem",
+                    "stack-gap": "1rem",
+                    "grid-gutter": "1rem",
+                    "section-gap": "2rem",
+                    "safe-area-top": "env(safe-area-inset-top)"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "display-temp-mobile": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-temp": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-temp-mobile": ["72px", {"lineHeight": "80px", "fontWeight": "200"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-temp": ["96px", {"lineHeight": "100px", "letterSpacing": "-0.04em", "fontWeight": "200"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0f1418;
+            color: #dee3e8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            backdrop-filter: blur(20px);
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card-dark {
+            backdrop-filter: blur(20px);
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .wave-container {
+            height: 120px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tide-line {
+            fill: none;
+            stroke: #8ed5ff;
+            stroke-width: 2;
+            stroke-dasharray: 4 2;
+        }
+
+        .tide-fill {
+            fill: url(#tideGradient);
+            opacity: 0.2;
+        }
+
+        .sun-path {
+            fill: none;
+            stroke: rgba(255, 193, 118, 0.3);
+            stroke-width: 2;
+            stroke-dasharray: 4 4;
+        }
+
+        .sun-active-path {
+            fill: none;
+            stroke: #ffc176;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-32">
+<!-- Atmospheric Background Shader -->
+
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-white/10 border-b border-white/20 flex justify-between items-center px-container-padding py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<h1 class="text-headline-md font-headline-md text-on-surface">Tides &amp; Sun</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:opacity-80 active:scale-95 transition-transform">add</button>
+</header>
+<main class="pt-24 px-container-padding space-y-section-gap max-w-2xl mx-auto">
+<!-- Tide Section -->
+<section class="space-y-stack-gap">
+<div class="flex justify-between items-end">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Tides</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Pacific Ocean • Local Time</p>
+</div>
+<div class="glass-card rounded-xl p-glass-padding overflow-hidden">
+<!-- Tide Visualization -->
+<div class="wave-container mb-6">
+<svg class="w-full h-full preserve-3d" viewbox="0 0 400 120">
+<defs>
+<lineargradient id="tideGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#8ed5ff"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+<!-- Theoretical Sine Wave for Tides -->
+<path class="tide-fill" d="M0,80 C50,20 150,20 200,60 C250,100 350,100 400,40 V120 H0 Z"></path>
+<path class="tide-line" d="M0,80 C50,20 150,20 200,60 C250,100 350,100 400,40"></path>
+<!-- Indicator for current time -->
+<circle cx="160" cy="45" fill="#8ed5ff" r="4"></circle>
+<line stroke="white" stroke-opacity="0.2" stroke-width="1" x1="160" x2="160" y1="0" y2="120"></line>
+</svg>
+</div>
+<!-- Tide High/Low Grid -->
+<div class="grid grid-cols-2 gap-grid-gutter">
+<div class="glass-card-dark rounded-lg p-4 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">water_drop</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">HIGH TIDE</p>
+<p class="font-headline-md text-headline-md text-on-surface">04:12 AM</p>
+<p class="font-label-sm text-label-sm text-primary">6.4 ft</p>
+</div>
+</div>
+<div class="glass-card-dark rounded-lg p-4 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">waves</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">LOW TIDE</p>
+<p class="font-headline-md text-headline-md text-on-surface">10:45 AM</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">1.2 ft</p>
+</div>
+</div>
+<div class="glass-card-dark rounded-lg p-4 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">water_drop</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">HIGH TIDE</p>
+<p class="font-headline-md text-headline-md text-on-surface">04:58 PM</p>
+<p class="font-label-sm text-label-sm text-primary">5.8 ft</p>
+</div>
+</div>
+<div class="glass-card-dark rounded-lg p-4 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">waves</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">LOW TIDE</p>
+<p class="font-headline-md text-headline-md text-on-surface">11:12 PM</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">0.9 ft</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Sun Section -->
+<section class="space-y-stack-gap">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Sun</h2>
+<div class="glass-card rounded-xl p-glass-padding space-y-6">
+<!-- Sun Path Visualization -->
+<div class="relative h-32 w-full pt-4">
+<svg class="w-full h-full" viewbox="0 0 400 100">
+<!-- Background Path -->
+<path class="sun-path" d="M 20 80 Q 200 -20 380 80"></path>
+<!-- Active (Daylight) Path -->
+<path class="sun-active-path" d="M 20 80 Q 200 -20 280 18"></path>
+<!-- Horizontal Line (Horizon) -->
+<line stroke="white" stroke-opacity="0.1" stroke-width="1" x1="10" x2="390" y1="80" y2="80"></line>
+<!-- Current Sun Position -->
+<circle class="shadow-lg shadow-tertiary/50" cx="280" cy="18" fill="#ffc176" r="8"></circle>
+</svg>
+<div class="flex justify-between mt-2 px-2">
+<div class="text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Sunrise</p>
+<p class="font-body-md text-body-md font-bold">06:24</p>
+</div>
+<div class="text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Sunset</p>
+<p class="font-body-md text-body-md font-bold">19:42</p>
+</div>
+</div>
+</div>
+<!-- Stats Divider -->
+<div class="h-px bg-white/10 w-full"></div>
+<!-- Sun Stats Grid -->
+<div class="grid grid-cols-2 gap-grid-gutter">
+<div class="space-y-1">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-[20px]">light_mode</span>
+<p class="font-label-caps text-label-caps">DAYLIGHT</p>
+</div>
+<p class="font-headline-md text-headline-md">13h 18m</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">+2m from yesterday</p>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-[20px]">wb_twilight</span>
+<p class="font-label-caps text-label-caps">SOLAR NOON</p>
+</div>
+<p class="font-headline-md text-headline-md">13:03 PM</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Sun at 72° Alt</p>
+</div>
+</div>
+<!-- Extra Detail Card -->
+<div class="glass-card-dark rounded-lg p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-weight="fill">wb_sunny</span>
+<div>
+<p class="font-label-sm text-label-sm font-semibold">UV Index</p>
+<p class="font-body-md text-body-md text-on-surface">Very High (9)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Informational Card -->
+<div class="glass-card rounded-xl p-glass-padding border-tertiary/20 bg-tertiary/5">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-tertiary">info</span>
+<p class="font-body-md text-body-md text-on-surface-variant italic">
+                    Tidal information is based on the nearest reference station. Actual water levels may vary based on barometric pressure and wind conditions.
+                </p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-2 backdrop-blur-xl bg-white/10 border-t border-white/20">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">wb_sunny</span>
+<span class="font-label-sm text-label-sm">Forecast</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">hide</span>
+<span class="font-label-sm text-label-sm">Tides</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-sm text-label-sm">Search</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for tide wave "breathing"
+        document.addEventListener('DOMContentLoaded', () => {
+            const tideFill = document.querySelector('.tide-fill');
+            const tideLine = document.querySelector('.tide-line');
+            
+            let time = 0;
+            function animateTide() {
+                time += 0.02;
+                const offset = Math.sin(time) * 3;
+                // Modifying the control points slightly for a "flowing" effect
+                const path = `M0,${80 + offset} C50,${20 + offset} 150,${20 - offset} 200,${60 + offset} C250,${100 + offset} 350,${100 - offset} 400,${40 + offset}`;
+                
+                tideLine.setAttribute('d', path);
+                tideFill.setAttribute('d', path + ' V120 H0 Z');
+                
+                requestAnimationFrame(animateTide);
+            }
+            animateTide();
+        });
+    </script>
+</body></html>
