@@ -1447,14 +1447,8 @@ const App = {
     }
     App.switchTab('home');
     document.getElementById('screen-home').innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Locating you…</div></div>`;
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const { latitude: lat, longitude: lon } = pos.coords;
-      const name = await reverseGeocode(lat, lon) || 'Current Location';
-      loadLocation(lat, lon, name, true);
-    }, err => {
-      const msg = err.code === 1 ? 'Location permission denied. Search for a city instead.' :
-                  err.code === 2 ? 'Location unavailable. Search for a city instead.' :
-                                   'Location timed out. Search for a city instead.';
+
+    const showGeoError = (msg) => {
       document.getElementById('screen-home').innerHTML = `
         <div class="geo-prompt">
           ${msym('location_off')}
@@ -1462,6 +1456,30 @@ const App = {
           <p>${msg}</p>
           <button class="btn-primary" onclick="App.goSearch()">Search Locations</button>
         </div>`;
+    };
+
+    let settled = false;
+    // Chrome on iOS sometimes never fires the error callback when the permission
+    // prompt is dismissed — this fallback catches that silent hang.
+    const fallback = setTimeout(() => {
+      if (!settled) { settled = true; showGeoError('Location timed out. Search for a city instead.'); }
+    }, 12000);
+
+    navigator.geolocation.getCurrentPosition(async pos => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallback);
+      const { latitude: lat, longitude: lon } = pos.coords;
+      const name = await reverseGeocode(lat, lon) || 'Current Location';
+      loadLocation(lat, lon, name, true);
+    }, err => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallback);
+      const msg = err.code === 1 ? 'Location permission denied. Search for a city instead.' :
+                  err.code === 2 ? 'Location unavailable. Search for a city instead.' :
+                                   'Location timed out. Search for a city instead.';
+      showGeoError(msg);
     }, { timeout: 10000, maximumAge: 300000 });
   },
 
