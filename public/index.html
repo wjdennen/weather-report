@@ -1106,7 +1106,8 @@ function renderHome() {
   const humidity = round(c.relative_humidity_2m);
   const uv = round(w.daily.uv_index_max[0] || 0);
   const precip = c.precipitation.toFixed(2);
-  const vis = c.visibility != null ? `${round(c.visibility / 1609)}mi` : '—';
+  const visMi = c.visibility != null ? round(c.visibility / 1609) : null;
+  const vis = visMi != null ? (visMi >= 10 ? '10+ mi' : `${visMi} mi`) : '—';
   const gusts = round(c.wind_gusts_10m);
 
   // Sun section
