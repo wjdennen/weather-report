@@ -238,6 +238,16 @@ html, body {
 .hourly-icon .msym { font-size: 20px; color: var(--primary); }
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
 .hourly-precip { font-size: 10px; font-weight: 500; color: rgba(142,213,255,0.7); }
+.hourly-day-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--tertiary);
+  margin-bottom: -2px;
+}
+.hourly-day-divider {
+  flex-shrink: 0; width: 1px; align-self: stretch;
+  margin: 4px 2px;
+  background: linear-gradient(to bottom, transparent 10%, var(--outline-variant) 40%, var(--outline-variant) 60%, transparent 90%);
+}
 
 /* Conditions grid */
 .conditions-grid {
@@ -979,6 +989,7 @@ function renderHome() {
   // Build hourly chips (next 24 hours from current hour)
   const nowH = now.getHours();
   let hourlyHTML = '';
+  let lastDate = now.getDate();
   for (let offset = 0; offset < 25; offset++) {
     const idx = nowH + offset;
     if (idx >= w.hourly.time.length) break;
@@ -986,9 +997,24 @@ function renderHome() {
     const hCode = w.hourly.weather_code[idx];
     const hTemp = round(w.hourly.temperature_2m[idx]);
     const hPrec = w.hourly.precipitation_probability[idx];
-    const label = offset === 0 ? 'Now' : fmtShort(t);
     const isNow = offset === 0;
+
+    // Detect day crossing — insert a divider and label the chip
+    const tDate = t.getDate();
+    const isNewDay = !isNow && tDate !== lastDate;
+    if (isNewDay) {
+      lastDate = tDate;
+      hourlyHTML += `<div class="hourly-day-divider"></div>`;
+    }
+
+    const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+    const dayLabel = isNewDay
+      ? (tDate === tomorrow.getDate() ? 'Tomorrow' : DAYS[t.getDay()])
+      : null;
+
+    const label = isNow ? 'Now' : fmtShort(t);
     hourlyHTML += `<div class="hourly-chip ${isNow ? 'now' : ''}">
+      ${dayLabel ? `<div class="hourly-day-label">${dayLabel}</div>` : ''}
       <div class="hourly-time">${label}</div>
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
