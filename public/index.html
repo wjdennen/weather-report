@@ -216,12 +216,28 @@ html, body {
 
 /* Hourly scroll */
 .hourly-scroll {
-  display: flex; gap: 8px;
+  display: flex; gap: 0;
   overflow-x: auto; padding-bottom: 4px;
   margin-bottom: 14px;
   scrollbar-width: none;
+  align-items: flex-start;
 }
 .hourly-scroll::-webkit-scrollbar { display: none; }
+.hourly-day-group {
+  display: flex; flex-direction: column; gap: 8px;
+  flex-shrink: 0;
+}
+.hourly-day-group + .hourly-day-group {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid var(--outline-variant);
+}
+.hourly-group-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--tertiary);
+  padding: 0 2px;
+}
+.hourly-chips-row { display: flex; gap: 8px; }
 .hourly-chip {
   flex-shrink: 0;
   background: var(--glass-bg);
@@ -238,16 +254,6 @@ html, body {
 .hourly-icon .msym { font-size: 20px; color: var(--primary); }
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
 .hourly-precip { font-size: 10px; font-weight: 500; color: rgba(142,213,255,0.7); }
-.hourly-day-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--tertiary);
-  margin-bottom: -2px;
-}
-.hourly-day-divider {
-  flex-shrink: 0; width: 1px; align-self: stretch;
-  margin: 4px 2px;
-  background: linear-gradient(to bottom, transparent 10%, var(--outline-variant) 40%, var(--outline-variant) 60%, transparent 90%);
-}
 
 /* Conditions grid */
 .conditions-grid {
@@ -300,7 +306,10 @@ html, body {
 .forecast-day.today { color: var(--primary); }
 .forecast-icon-wrap { width: 36px; display: flex; justify-content: center; }
 .forecast-icon-wrap .msym { font-size: 22px; color: var(--primary); }
-.forecast-cond { flex: 1; font-size: 13px; color: var(--on-surface-variant); padding: 0 10px; }
+.forecast-cond-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 0 10px; }
+.forecast-cond { font-size: 13px; color: var(--on-surface-variant); }
+.forecast-sun-times { font-size: 10px; color: var(--tertiary); opacity: 0.8; display: flex; align-items: center; gap: 2px; }
+.forecast-sun-times .msym { font-size: 11px; color: var(--tertiary); }
 .forecast-temps {
   display: flex; align-items: center; gap: 6px; width: 110px;
 }
@@ -981,41 +990,49 @@ function renderHome() {
   const hiToday = round(w.daily.temperature_2m_max[todayIdx]);
   const loToday = round(w.daily.temperature_2m_min[todayIdx]);
 
-  // Build hourly chips (next 24 hours from current hour)
+  // Build hourly chips grouped by day
   const nowH = now.getHours();
-  let hourlyHTML = '';
-  let lastDate = now.getDate();
-  for (let offset = 0; offset < 25; offset++) {
-    const idx = nowH + offset;
-    if (idx >= w.hourly.time.length) break;
+
+  function buildHourlyChip(idx, isNow) {
+    if (idx >= w.hourly.time.length) return '';
     const t = new Date(w.hourly.time[idx]);
     const hCode = w.hourly.weather_code[idx];
     const hTemp = round(w.hourly.temperature_2m[idx]);
     const hPrec = w.hourly.precipitation_probability[idx];
-    const isNow = offset === 0;
-
-    // Detect day crossing — insert a divider and label the chip
-    const tDate = t.getDate();
-    const isNewDay = !isNow && tDate !== lastDate;
-    if (isNewDay) {
-      lastDate = tDate;
-      hourlyHTML += `<div class="hourly-day-divider"></div>`;
-    }
-
-    const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-    const dayLabel = isNewDay
-      ? (tDate === tomorrow.getDate() ? 'Tomorrow' : DAYS[t.getDay()])
-      : null;
-
-    const label = isNow ? 'Now' : fmtShort(t);
-    hourlyHTML += `<div class="hourly-chip ${isNow ? 'now' : ''}">
-      ${dayLabel ? `<div class="hourly-day-label">${dayLabel}</div>` : ''}
-      <div class="hourly-time">${label}</div>
+    return `<div class="hourly-chip${isNow ? ' now' : ''}">
+      <div class="hourly-time">${isNow ? 'Now' : fmtShort(t)}</div>
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
       ${hPrec > 10 ? `<div class="hourly-precip">${hPrec}%</div>` : ''}
     </div>`;
   }
+
+  // Today: remaining hours (nowH → 23)
+  let todayChips = '';
+  for (let i = nowH; i < 24; i++) todayChips += buildHourlyChip(i, i === nowH);
+
+  // Tomorrow: all 24 hours (index 24 → 47)
+  let tomorrowChips = '';
+  for (let i = 24; i < 48; i++) tomorrowChips += buildHourlyChip(i, false);
+
+  // Day after tomorrow: first 12 hours (index 48 → 59)
+  let dayAfterChips = '';
+  const dayAfterName = DAYS[new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2).getDay()];
+  for (let i = 48; i < 60; i++) dayAfterChips += buildHourlyChip(i, false);
+
+  const hourlyHTML = `
+    <div class="hourly-day-group">
+      <div class="hourly-group-label">Today</div>
+      <div class="hourly-chips-row">${todayChips}</div>
+    </div>
+    ${tomorrowChips ? `<div class="hourly-day-group">
+      <div class="hourly-group-label">Tomorrow</div>
+      <div class="hourly-chips-row">${tomorrowChips}</div>
+    </div>` : ''}
+    ${dayAfterChips ? `<div class="hourly-day-group">
+      <div class="hourly-group-label">${dayAfterName}</div>
+      <div class="hourly-chips-row">${dayAfterChips}</div>
+    </div>` : ''}`;
 
   // Conditions
   const wind = round(c.wind_speed_10m);
@@ -1126,7 +1143,7 @@ function renderHome() {
       </div>
     </div>
 
-    <div class="hourly-scroll">${hourlyHTML}</div>
+    <div class="hourly-scroll" style="padding: 4px 0 8px">${hourlyHTML}</div>
 
     <div class="conditions-grid">
       <div class="cond-card">
@@ -1234,10 +1251,16 @@ function renderForecast() {
     const barLeft  = ((lo - allMin) / totalRange * 100).toFixed(1);
     const barWidth = ((hi - lo) / totalRange * 100).toFixed(1);
 
+    const srTime = daily.sunrise[i] ? fmt12(new Date(daily.sunrise[i])) : '—';
+    const ssTime = daily.sunset[i]  ? fmt12(new Date(daily.sunset[i]))  : '—';
+
     rowsHTML += `<div class="forecast-row">
       <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
       <div class="forecast-icon-wrap">${msym(h(code, isDay))}</div>
-      <div class="forecast-cond">${wt(code)}</div>
+      <div class="forecast-cond-wrap">
+        <div class="forecast-cond">${wt(code)}</div>
+        <div class="forecast-sun-times">${msym('wb_twilight','font-size:11px')} ${srTime} &nbsp; ${msym('wb_twilight','font-size:11px')} ${ssTime}</div>
+      </div>
       <div class="forecast-temps">
         <div class="temp-lo">${lo}°</div>
         <div class="temp-bar-wrap">
