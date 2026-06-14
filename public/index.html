@@ -1356,8 +1356,11 @@ function renderForecast() {
       String(rowDate.getMonth() + 1).padStart(2, '0') + '-' +
       String(rowDate.getDate()).padStart(2, '0');
     const noaaPeriods = noaaByDate[rowKey] || [];
-    const noaaPeriod = noaaPeriods.find(p => p.isDaytime) || noaaPeriods[0] || null;
-    const hasDetail = !!noaaPeriod;
+    const hasDetail = noaaPeriods.length > 0;
+    const detailInner = noaaPeriods.map(p => `<div class="noaa-period-block">
+        <div class="forecast-detail-name">${p.name}</div>
+        <div class="forecast-detail-text">${p.detailedForecast}</div>
+      </div>`).join('');
 
     rowsHTML += `<div class="forecast-item">
       <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
@@ -1376,10 +1379,7 @@ function renderForecast() {
         </div>
         <div class="forecast-expand">${hasDetail ? `<span class="msym" id="fc-${i}">expand_more</span>` : ''}</div>
       </div>
-      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">
-        <div class="forecast-detail-name">${noaaPeriod.name}</div>
-        <div class="forecast-detail-text">${noaaPeriod.detailedForecast}</div>
-      </div>` : ''}
+      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">${detailInner}</div>` : ''}
     </div>`;
   }
 
