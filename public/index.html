@@ -310,13 +310,15 @@ html, body {
   overflow: hidden;
   margin-bottom: 14px;
 }
+.forecast-item { border-bottom: 1px solid var(--outline-variant); }
+.forecast-item:last-child { border-bottom: none; }
 .forecast-row {
   display: flex; align-items: center;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--outline-variant);
   transition: background 0.2s;
 }
-.forecast-row:last-child { border-bottom: none; }
+.forecast-row.has-detail { cursor: pointer; }
+.forecast-row.has-detail:active { background: rgba(255,255,255,0.05); }
 .forecast-row:hover { background: rgba(255,255,255,0.03); }
 .forecast-day { width: 46px; font-size: 15px; font-weight: 600; color: var(--on-surface); }
 .forecast-day.today { color: var(--primary); }
@@ -327,12 +329,30 @@ html, body {
 .forecast-sun-times { font-size: 10px; color: var(--tertiary); opacity: 0.8; display: flex; align-items: center; gap: 2px; }
 .forecast-sun-times .msym { font-size: 11px; color: var(--tertiary); }
 .forecast-temps {
-  display: flex; align-items: center; gap: 6px; width: 110px;
+  display: flex; align-items: center; gap: 6px; width: 100px;
 }
 .temp-lo { font-size: 13px; font-weight: 500; color: var(--on-surface-variant); width: 28px; text-align: right; }
 .temp-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; }
 .temp-bar-fill { position: absolute; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #8ed5ff, #ffc176); }
 .temp-hi { font-size: 13px; font-weight: 600; color: var(--on-surface); width: 28px; }
+.forecast-expand { width: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.forecast-expand .msym { font-size: 18px; color: var(--outline); transition: transform 0.2s; }
+
+.forecast-detail {
+  display: none;
+  padding: 0 16px 14px 68px;
+  background: rgba(255,255,255,0.02);
+}
+.forecast-detail-name {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--primary); margin-bottom: 6px;
+}
+.forecast-detail-text {
+  font-size: 13px; color: var(--on-surface-variant); line-height: 1.65;
+}
+
+.noaa-period-name { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.noaa-period-text { font-size: 14px; color: var(--on-surface); line-height: 1.65; }
 
 .planner-card {
   background: rgba(255,193,118,0.08);
@@ -657,6 +677,7 @@ const state = {
   weather: null,
   tides: null,
   tideStation: null,
+  noaaForecast: null,
   stations: null,
   stationsLoading: false,
   managing: false,
@@ -794,6 +815,20 @@ async function findNearestStation(lat, lon) {
   return bestDist <= 150 ? { id: best[0], name: best[1], state: best[2], lat: best[3], lon: best[4], dist: Math.round(bestDist) } : null;
 }
 
+async function fetchNWSForecast(lat, lon) {
+  try {
+    const r = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+    if (!r.ok) return null; // 404 = outside US, or grid unavailable
+    const pts = await r.json();
+    const url = pts.properties?.forecast;
+    if (!url) return null;
+    const r2 = await fetch(url);
+    if (!r2.ok) return null;
+    const fc = await r2.json();
+    return fc.properties?.periods || null;
+  } catch { return null; }
+}
+
 async function fetchTides(stationId) {
   const today = dateStr(new Date());
   const base = `${NOAA}?begin_date=${today}&end_date=${today}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=WeatherReport&format=json`;
@@ -862,6 +897,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.weather = null;
   state.tides = null;
   state.tideStation = null;
+  state.noaaForecast = null;
 
   document.getElementById('nav-location').textContent = name;
   document.getElementById('nav-pin').textContent = isGeo ? 'my_location' : 'location_on';
@@ -877,6 +913,15 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
     renderForecast();
+
+    // NWS detailed forecast in background (US only; silently skipped outside US)
+    fetchNWSForecast(lat, lon).then(periods => {
+      if (periods) {
+        state.noaaForecast = periods;
+        if (state.tab === 'home') renderHome();
+        if (state.tab === 'forecast') renderForecast();
+      }
+    });
 
     // Load tides in background; re-render home when data arrives
     findNearestStation(lat, lon).then(async station => {
@@ -1152,6 +1197,16 @@ function renderHome() {
       </div>`;
   }
 
+  let noaaHTML = '';
+  if (state.noaaForecast && state.noaaForecast.length > 0) {
+    const p = state.noaaForecast[0];
+    noaaHTML = `<div class="card">
+      <div class="card-label">Detailed Forecast · NWS</div>
+      <div class="noaa-period-name">${p.name}</div>
+      <div class="noaa-period-text">${p.detailedForecast}</div>
+    </div>`;
+  }
+
   el.innerHTML = `
     <div class="hero">
       <div class="condition-label">${wt(code)}</div>
@@ -1188,6 +1243,7 @@ function renderHome() {
       </div>
     </div>
 
+    ${noaaHTML}
     ${sunHTML}
     ${tideHTML}
 
@@ -1257,6 +1313,18 @@ function renderForecast() {
   const allMin = Math.min(...daily.temperature_2m_min);
   const totalRange = allMax - allMin || 1;
 
+  // Build NOAA period lookup: full day name → daytime (or first) period
+  const noaaDayMap = {};
+  if (state.noaaForecast) {
+    const todayFull = DAYS_FULL[now.getDay()];
+    for (const p of state.noaaForecast) {
+      let base = p.name.replace(/ Night$| Evening$/, '').trim();
+      if (['Today','Tonight','This Afternoon','This Morning','This Evening'].includes(base)) base = todayFull;
+      if (!noaaDayMap[base]) noaaDayMap[base] = [];
+      noaaDayMap[base].push(p);
+    }
+  }
+
   let rowsHTML = '';
   for (let i = 0; i < Math.min(7, daily.time.length); i++) {
     const d = new Date(daily.time[i]);
@@ -1274,20 +1342,32 @@ function renderForecast() {
     const srTime = daily.sunrise[i] ? fmt12(new Date(daily.sunrise[i])) : '—';
     const ssTime = daily.sunset[i]  ? fmt12(new Date(daily.sunset[i]))  : '—';
 
-    rowsHTML += `<div class="forecast-row">
-      <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
-      <div class="forecast-icon-wrap">${msym(h(code, isDay))}</div>
-      <div class="forecast-cond-wrap">
-        <div class="forecast-cond">${wt(code)}</div>
-        <div class="forecast-sun-times">${msym('wb_twilight','font-size:11px')} ${srTime} &nbsp; ${msym('wb_twilight','font-size:11px')} ${ssTime}</div>
-      </div>
-      <div class="forecast-temps">
-        <div class="temp-lo">${lo}°</div>
-        <div class="temp-bar-wrap">
-          <div class="temp-bar-fill" style="left:${barLeft}%;width:${barWidth}%"></div>
+    const dayFull = DAYS_FULL[d.getDay()];
+    const noaaPeriods = noaaDayMap[dayFull] || [];
+    const noaaPeriod = noaaPeriods.find(p => p.isDaytime) || noaaPeriods[0] || null;
+    const hasDetail = !!noaaPeriod;
+
+    rowsHTML += `<div class="forecast-item">
+      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
+        <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
+        <div class="forecast-icon-wrap">${msym(h(code, isDay))}</div>
+        <div class="forecast-cond-wrap">
+          <div class="forecast-cond">${wt(code)}</div>
+          <div class="forecast-sun-times">${msym('wb_twilight','font-size:11px')} ${srTime} &nbsp; ${msym('wb_twilight','font-size:11px')} ${ssTime}</div>
         </div>
-        <div class="temp-hi">${hi}°</div>
+        <div class="forecast-temps">
+          <div class="temp-lo">${lo}°</div>
+          <div class="temp-bar-wrap">
+            <div class="temp-bar-fill" style="left:${barLeft}%;width:${barWidth}%"></div>
+          </div>
+          <div class="temp-hi">${hi}°</div>
+        </div>
+        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="fc-${i}">expand_more</span>` : ''}</div>
       </div>
+      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">
+        <div class="forecast-detail-name">${noaaPeriod.name}</div>
+        <div class="forecast-detail-text">${noaaPeriod.detailedForecast}</div>
+      </div>` : ''}
     </div>`;
   }
 
@@ -1422,6 +1502,15 @@ function renderSearch(results = []) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleForecastDetail(idx) {
+  const detail = document.getElementById('fd-' + idx);
+  const chevron = document.getElementById('fc-' + idx);
+  if (!detail) return;
+  const isOpen = detail.style.display === 'block';
+  detail.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 /* ═══════════════════════════════
