@@ -351,6 +351,7 @@ html, body {
   font-size: 13px; color: var(--on-surface-variant); line-height: 1.65;
 }
 
+.noaa-period-block + .noaa-period-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--outline-variant); }
 .noaa-period-name { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
 .noaa-period-text { font-size: 14px; color: var(--on-surface); line-height: 1.65; }
 
@@ -1199,11 +1200,14 @@ function renderHome() {
 
   let noaaHTML = '';
   if (state.noaaForecast && state.noaaForecast.length > 0) {
-    const p = state.noaaForecast[0];
-    noaaHTML = `<div class="card">
-      <div class="card-label">Detailed Forecast · NWS</div>
+    const periods = state.noaaForecast.slice(0, 2);
+    const periodsHTML = periods.map(p => `<div class="noaa-period-block">
       <div class="noaa-period-name">${p.name}</div>
       <div class="noaa-period-text">${p.detailedForecast}</div>
+    </div>`).join('');
+    noaaHTML = `<div class="card">
+      <div class="card-label">Detailed Forecast · NWS</div>
+      ${periodsHTML}
     </div>`;
   }
 
@@ -1219,6 +1223,8 @@ function renderHome() {
     </div>
 
     <div class="hourly-scroll" style="padding: 4px 0 8px">${hourlyHTML}</div>
+
+    ${noaaHTML}
 
     <div class="conditions-grid">
       <div class="cond-card">
@@ -1243,7 +1249,6 @@ function renderHome() {
       </div>
     </div>
 
-    ${noaaHTML}
     ${sunHTML}
     ${tideHTML}
 
@@ -1313,23 +1318,28 @@ function renderForecast() {
   const allMin = Math.min(...daily.temperature_2m_min);
   const totalRange = allMax - allMin || 1;
 
-  // Build NOAA period lookup: full day name → daytime (or first) period
-  const noaaDayMap = {};
+  // Build NOAA period lookup keyed by local date string "YYYY-MM-DD".
+  // Use startTime (a timezone-aware ISO datetime) so the local date is exact
+  // regardless of the user's UTC offset.
+  const noaaByDate = {};
   if (state.noaaForecast) {
-    const todayFull = DAYS_FULL[now.getDay()];
     for (const p of state.noaaForecast) {
-      let base = p.name.replace(/ Night$| Evening$/, '').trim();
-      if (['Today','Tonight','This Afternoon','This Morning','This Evening'].includes(base)) base = todayFull;
-      if (!noaaDayMap[base]) noaaDayMap[base] = [];
-      noaaDayMap[base].push(p);
+      if (!p.startTime) continue;
+      const d = new Date(p.startTime);
+      const key = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+      if (!noaaByDate[key]) noaaByDate[key] = [];
+      noaaByDate[key].push(p);
     }
   }
 
   let rowsHTML = '';
   for (let i = 0; i < Math.min(7, daily.time.length); i++) {
-    const d = new Date(daily.time[i]);
-    const dow = d.getDay();
-    const dayLabel = i === 0 ? 'Today' : DAYS[dow];
+    // Use local date arithmetic — ISO date-only strings parse as UTC midnight,
+    // which shifts getDay() by one in negative-offset timezones (e.g. EDT).
+    const rowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const dayLabel = i === 0 ? 'Today' : DAYS[rowDate.getDay()];
     const isToday = i === 0;
     const code = daily.weather_code[i];
     const hi = round(daily.temperature_2m_max[i]);
@@ -1342,8 +1352,10 @@ function renderForecast() {
     const srTime = daily.sunrise[i] ? fmt12(new Date(daily.sunrise[i])) : '—';
     const ssTime = daily.sunset[i]  ? fmt12(new Date(daily.sunset[i]))  : '—';
 
-    const dayFull = DAYS_FULL[d.getDay()];
-    const noaaPeriods = noaaDayMap[dayFull] || [];
+    const rowKey = rowDate.getFullYear() + '-' +
+      String(rowDate.getMonth() + 1).padStart(2, '0') + '-' +
+      String(rowDate.getDate()).padStart(2, '0');
+    const noaaPeriods = noaaByDate[rowKey] || [];
     const noaaPeriod = noaaPeriods.find(p => p.isDaytime) || noaaPeriods[0] || null;
     const hasDetail = !!noaaPeriod;
 
