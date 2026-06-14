@@ -1190,10 +1190,10 @@ function renderHome() {
       </div>
       ${chartHTML}
       <div class="tide-times-grid">
-        ${tideCard(hiTides[0], true)}
-        ${tideCard(loTides[0], false)}
-        ${tideCard(hiTides[1] || null, true)}
-        ${tideCard(loTides[1] || null, false)}
+        ${tideCard(hiTides[0], true, now)}
+        ${tideCard(loTides[0], false, now)}
+        ${tideCard(hiTides[1] || null, true, now)}
+        ${tideCard(loTides[1] || null, false, now)}
       </div>
       <div class="tide-disclaimer">
         ${msym('info')}
@@ -1441,13 +1441,20 @@ function renderForecast() {
     <div class="powered-by">Forecast by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>`;
 }
 
-function tideCard(tide, isHigh) {
+function tideCard(tide, isHigh, now) {
   if (!tide) return `<div class="tide-time-card"><div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div><div class="tide-time-info"><div class="tide-type-label">${isHigh?'High':'Low'} Tide</div><div class="tide-time-val">—</div></div></div>`;
   const d = new Date(tide.t.replace(' ','T'));
+  let day = '';
+  if (now) {
+    const td = d.toDateString();
+    const today = now.toDateString();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
+    day = td === today ? ' · Today' : td === tomorrow ? ' · Tomorrow' : ' · ' + DAYS[d.getDay()];
+  }
   return `<div class="tide-time-card">
     <div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div>
     <div class="tide-time-info">
-      <div class="tide-type-label">${isHigh?'High':'Low'} Tide</div>
+      <div class="tide-type-label">${isHigh?'High':'Low'} Tide${day}</div>
       <div class="tide-time-val">${fmt12(d)}</div>
       <div class="tide-height-val">${parseFloat(tide.v).toFixed(1)} ft</div>
     </div>
