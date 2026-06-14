@@ -398,24 +398,21 @@ html, body {
 }
 .tide-chart-wrap { height: 100px; margin: 4px 0 10px; }
 
-.tide-times-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin-bottom: 14px;
+.tide-list { display: flex; flex-direction: column; margin-bottom: 14px; }
+.tide-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--outline-variant);
 }
-.tide-time-card {
-  background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex; align-items: flex-start; gap: 12px;
-}
-.tide-type-icon .msym { font-size: 28px; }
-.tide-type-icon.high .msym { color: var(--primary); }
-.tide-type-icon.low .msym { color: var(--secondary); }
-.tide-time-info {}
-.tide-type-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 2px; }
-.tide-time-val { font-size: 24px; font-weight: 700; color: var(--on-surface); line-height: 1.1; }
-.tide-height-val { font-size: 13px; font-weight: 500; color: var(--primary); margin-top: 3px; }
+.tide-row:last-child { border-bottom: none; }
+.tide-row-icon .msym { font-size: 22px; }
+.tide-row-icon.high .msym { color: var(--primary); }
+.tide-row-icon.low .msym { color: var(--secondary); }
+.tide-row-time { font-size: 20px; font-weight: 700; color: var(--on-surface); min-width: 88px; }
+.tide-row-meta { flex: 1; }
+.tide-row-type { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--on-surface-variant); }
+.tide-row-height { font-size: 13px; font-weight: 500; color: var(--primary); margin-top: 1px; }
+.tide-row-day { font-size: 11px; font-weight: 600; color: var(--tertiary); opacity: 0.8; }
 
 .sun-card {
   background: var(--surface-container);
@@ -1175,13 +1172,29 @@ function renderHome() {
   } else {
     const { hilo, hourly } = state.tides;
     const station = state.tideStation;
-    const hiTides = hilo.filter(p => p.type === 'H');
-    const loTides = hilo.filter(p => p.type === 'L');
     const chartHTML = hourly.length ? `
       <div class="tide-chart-card">
         <div class="card-label">Today's Tide Curve</div>
         <div class="tide-chart-wrap">${tideChartSVG(hourly, now)}</div>
       </div>` : '';
+    const sortedTides = [...hilo].sort((a, b) => a.t < b.t ? -1 : 1);
+    const tideRowsHTML = sortedTides.map(tide => {
+      const isHigh = tide.type === 'H';
+      const d = new Date(tide.t.replace(' ', 'T'));
+      const td = d.toDateString();
+      const today = now.toDateString();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
+      const day = td === today ? 'Today' : td === tomorrow ? 'Tomorrow' : DAYS[d.getDay()];
+      return `<div class="tide-row">
+        <div class="tide-row-icon ${isHigh ? 'high' : 'low'}">${msym(isHigh ? 'water_drop' : 'waves')}</div>
+        <div class="tide-row-time">${fmt12(d)}</div>
+        <div class="tide-row-meta">
+          <div class="tide-row-type">${isHigh ? 'High' : 'Low'} Tide</div>
+          <div class="tide-row-height">${parseFloat(tide.v).toFixed(1)} ft</div>
+        </div>
+        <div class="tide-row-day">${day}</div>
+      </div>`;
+    }).join('');
     tideCredit = ` · Tides by <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA CO-OPS</a>`;
     tideHTML = `
       <div class="section-heading-row">
@@ -1189,12 +1202,7 @@ function renderHome() {
         <div class="station-name-sm">${station.name}${station.state ? ', ' + station.state : ''} · ${station.dist}mi</div>
       </div>
       ${chartHTML}
-      <div class="tide-times-grid">
-        ${tideCard(hiTides[0], true, now)}
-        ${tideCard(loTides[0], false, now)}
-        ${tideCard(hiTides[1] || null, true, now)}
-        ${tideCard(loTides[1] || null, false, now)}
-      </div>
+      <div class="tide-list">${tideRowsHTML}</div>
       <div class="tide-disclaimer">
         ${msym('info')}
         <p>Tidal information is based on the nearest NOAA reference station. Actual water levels may vary based on barometric pressure and wind conditions.</p>
@@ -1441,25 +1449,6 @@ function renderForecast() {
     <div class="powered-by">Forecast by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>`;
 }
 
-function tideCard(tide, isHigh, now) {
-  if (!tide) return `<div class="tide-time-card"><div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div><div class="tide-time-info"><div class="tide-type-label">${isHigh?'High':'Low'} Tide</div><div class="tide-time-val">—</div></div></div>`;
-  const d = new Date(tide.t.replace(' ','T'));
-  let day = '';
-  if (now) {
-    const td = d.toDateString();
-    const today = now.toDateString();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
-    day = td === today ? ' · Today' : td === tomorrow ? ' · Tomorrow' : ' · ' + DAYS[d.getDay()];
-  }
-  return `<div class="tide-time-card">
-    <div class="tide-type-icon ${isHigh?'high':'low'}">${msym(isHigh?'water_drop':'waves')}</div>
-    <div class="tide-time-info">
-      <div class="tide-type-label">${isHigh?'High':'Low'} Tide${day}</div>
-      <div class="tide-time-val">${fmt12(d)}</div>
-      <div class="tide-height-val">${parseFloat(tide.v).toFixed(1)} ft</div>
-    </div>
-  </div>`;
-}
 
 /* ═══════════════════════════════
    RENDER: SEARCH
