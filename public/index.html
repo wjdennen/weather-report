@@ -216,12 +216,14 @@ html, body {
 
 /* Hourly scroll */
 .hourly-wrap { margin-bottom: 14px; }
-.hourly-group-label {
+.hourly-label-bar {
+  position: relative; overflow: hidden; height: 14px; margin-bottom: 8px;
+}
+.hourly-hl {
+  position: absolute; top: 0; left: 0;
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--tertiary);
   padding: 0 2px;
-  position: sticky;
-  left: 0;
 }
 .hourly-scroll {
   display: flex; gap: 0;
@@ -1091,15 +1093,12 @@ function renderHome() {
 
   const hourlyHTML = `
     <div class="hourly-day-group">
-      <div class="hourly-group-label">Today</div>
       <div class="hourly-chips-row">${todayChips}</div>
     </div>
     ${tomorrowChips ? `<div class="hourly-day-group">
-      <div class="hourly-group-label">Tomorrow</div>
       <div class="hourly-chips-row">${tomorrowChips}</div>
     </div>` : ''}
     ${dayAfterChips ? `<div class="hourly-day-group">
-      <div class="hourly-group-label">${dayAfterName}</div>
       <div class="hourly-chips-row">${dayAfterChips}</div>
     </div>` : ''}`;
 
@@ -1227,6 +1226,11 @@ function renderHome() {
     </div>
 
     <div class="hourly-wrap">
+      <div class="hourly-label-bar">
+        <div class="hourly-hl">Today</div>
+        ${tomorrowChips ? `<div class="hourly-hl" style="transform:translateX(100%)">Tomorrow</div>` : ''}
+        ${dayAfterChips ? `<div class="hourly-hl" style="transform:translateX(100%)">${dayAfterName}</div>` : ''}
+      </div>
       <div class="hourly-scroll">${hourlyHTML}</div>
     </div>
 
@@ -1262,6 +1266,26 @@ function renderHome() {
       Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit} · by <strong>Clam Code</strong>
     </div>`;
 
+  // Slide hourly day labels as user scrolls — TODAY stays frozen, then slides out as TOMORROW slides in
+  const hScroll = el.querySelector('.hourly-scroll');
+  const hLabels = [...el.querySelectorAll('.hourly-hl')];
+  const hGroups = [...(hScroll?.querySelectorAll('.hourly-day-group') || [])];
+  if (hScroll && hLabels.length > 1 && hGroups.length > 1) {
+    const ZONE = 50;
+    const updateLabels = () => {
+      const sl = hScroll.scrollLeft;
+      hLabels.forEach((lbl, i) => {
+        const g = hGroups[i];
+        const nextG = hGroups[i + 1];
+        if (!g) return;
+        const arrive = i === 0 ? 1 : Math.max(0, Math.min(1, (sl - (g.offsetLeft - ZONE)) / ZONE));
+        const depart = nextG ? Math.max(0, Math.min(1, (sl - (nextG.offsetLeft - ZONE)) / ZONE)) : 0;
+        lbl.style.transform = `translateX(${(1 - arrive - depart) * 100}%)`;
+      });
+    };
+    hScroll.addEventListener('scroll', updateLabels, { passive: true });
+    updateLabels();
+  }
 }
 
 function renderHomeError(msg) {
