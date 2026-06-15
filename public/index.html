@@ -821,12 +821,13 @@ async function findNearestStation(lat, lon) {
 
 async function fetchNWSForecast(lat, lon) {
   try {
-    const r = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+    const nwsHeaders = { 'User-Agent': '(weather-report, dennen@gmail.com)' };
+    const r = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, { headers: nwsHeaders });
     if (!r.ok) return null; // 404 = outside US, or grid unavailable
     const pts = await r.json();
     const url = pts.properties?.forecast;
     if (!url) return null;
-    const r2 = await fetch(url);
+    const r2 = await fetch(url, { headers: nwsHeaders });
     if (!r2.ok) return null;
     const fc = await r2.json();
     return fc.properties?.periods || null;
