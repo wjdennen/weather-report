@@ -1,4 +1,4 @@
-# Weather Report
+# Weather Report!
 
 A PWA weather app for current conditions, 7-day forecasts, tides, and sun info — built by [Clam Code](https://github.com/wjdennen). Deployable on Cloudflare Pages.
 
