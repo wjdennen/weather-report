@@ -426,6 +426,28 @@ html, body {
 .sun-stat-val { font-size: 22px; font-weight: 700; color: var(--on-surface); }
 .sun-stat-sub { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; }
 
+.moon-card {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.moon-icon { font-size: 44px; line-height: 1; flex-shrink: 0; }
+.moon-icon-new {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid var(--on-surface-variant);
+  flex-shrink: 0;
+}
+.moon-info { flex: 1; }
+.moon-phase-name { font-size: 20px; font-weight: 700; color: var(--on-surface); }
+.moon-stats { display: flex; gap: 16px; margin-top: 6px; }
+.moon-stat { font-size: 12px; color: var(--on-surface-variant); }
+.moon-stat strong { color: var(--on-surface); }
+
 .uv-row {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface-high); border: 1px solid var(--outline-variant);
@@ -969,6 +991,25 @@ function tideChartSVG(hourly, now) {
   </svg>`;
 }
 
+function moonPhaseInfo(date = new Date()) {
+  const known = new Date(Date.UTC(2000, 0, 6, 18, 14)); // known new moon
+  const age = (((date - known) / 86400000) % 29.53058770576 + 29.53058770576) % 29.53058770576;
+  const fraction = age / 29.53058770576;
+  const illumination = Math.round((1 - Math.cos(fraction * 2 * Math.PI)) / 2 * 100);
+  const phases = [
+    { name: 'New Moon',        emoji: null },
+    { name: 'Waxing Crescent', emoji: '🌒' },
+    { name: 'First Quarter',   emoji: '🌓' },
+    { name: 'Waxing Gibbous',  emoji: '🌔' },
+    { name: 'Full Moon',       emoji: '🌕' },
+    { name: 'Waning Gibbous',  emoji: '🌖' },
+    { name: 'Last Quarter',    emoji: '🌗' },
+    { name: 'Waning Crescent', emoji: '🌘' },
+  ];
+  const idx = Math.round(fraction * 8) % 8;
+  return { ...phases[idx], illumination, age: Math.round(age) };
+}
+
 function sunArcSVG(sunriseISO, sunsetISO) {
   const W = 300, H = 80;
   const now = new Date();
@@ -1120,6 +1161,23 @@ function renderHome() {
       </div>
     </div>`;
 
+  const moon = moonPhaseInfo();
+  const moonIconHTML = moon.emoji
+    ? `<div class="moon-icon">${moon.emoji}</div>`
+    : `<div class="moon-icon-new"></div>`;
+  const moonHTML = `
+    <div class="section-heading">Moon</div>
+    <div class="moon-card">
+      ${moonIconHTML}
+      <div class="moon-info">
+        <div class="moon-phase-name">${moon.name}</div>
+        <div class="moon-stats">
+          <div class="moon-stat">Illumination <strong>${moon.illumination}%</strong></div>
+          <div class="moon-stat">Day <strong>${moon.age}</strong> of 29</div>
+        </div>
+      </div>
+    </div>`;
+
   // Tide section
   let tideHTML = '';
   let tideCredit = '';
@@ -1251,6 +1309,7 @@ function renderHome() {
     ${buildForecastRows()}
 
     ${sunHTML}
+    ${moonHTML}
     ${tideHTML}
 
     <div class="powered-by">
