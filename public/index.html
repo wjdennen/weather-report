@@ -1691,6 +1691,7 @@ if ('serviceWorker' in navigator) {
 
   screen.addEventListener('touchstart', e => {
     if (state.tab !== 'home' || screen.scrollTop > 0 || !state.lat) return;
+    if (e.touches[0].clientY > 120) return;
     startY = e.touches[0].clientY;
   }, { passive: true });
 
