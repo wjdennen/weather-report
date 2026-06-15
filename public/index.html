@@ -1319,12 +1319,15 @@ function buildForecastRows() {
       <div class="forecast-detail-name">${p.name}</div>
       <div class="forecast-detail-text">${p.detailedForecast}</div>
     </div>`).join('');
+    // Prefer NWS daytime short forecast over Open-Meteo code label — more accurate probability/severity
+    const dayPeriod = noaaPeriods.find(p => !p.name?.toLowerCase().includes('night'));
+    const condLabel = dayPeriod?.shortForecast || wt(code);
     rowsHTML += `<div class="forecast-item">
       <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
         <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
         <div class="forecast-icon-wrap">${msym(h(code, true))}</div>
         <div class="forecast-cond-wrap">
-          <div class="forecast-cond">${wt(code)}</div>
+          <div class="forecast-cond">${condLabel}</div>
         </div>
         <div class="forecast-temps">
           <div class="temp-lo">${lo}°</div>
