@@ -1,4 +1,4 @@
-const CACHE = 'weather-report-v1';
+const CACHE = 'weather-report-__CACHE_VER__';
 const SHELL = ['/', '/manifest.json'];
 
 self.addEventListener('install', e => {
