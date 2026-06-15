@@ -104,23 +104,6 @@ html, body {
 .screen.active { display: block; }
 .screen::-webkit-scrollbar { display: none; }
 
-/* ── Bottom Nav ── */
-.bottom-nav {
-  display: flex;
-  background: var(--surface-container);
-  border-top: 1px solid var(--outline-variant);
-  flex-shrink: 0;
-  z-index: 20;
-}
-.nav-tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 10px 4px 10px; gap: 4px; cursor: pointer;
-  border: none; background: none; color: var(--on-surface-variant);
-  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
-  letter-spacing: 0.03em; transition: color 0.2s;
-}
-.nav-tab .msym { font-size: 22px; }
-.nav-tab.active { color: var(--primary); }
 
 /* ── Glass Cards ── */
 .glass {
@@ -183,31 +166,36 @@ html, body {
    HOME SCREEN
 ═══════════════════════════════ */
 .hero {
-  text-align: center;
-  padding: 24px 0 20px;
+  display: flex; flex-direction: column;
+  padding: 12px 0 14px;
 }
-.condition-label {
-  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+.hero-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-left {
+  flex: 1; display: flex; flex-direction: column; gap: 4px;
+}
+.hero-condition {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--on-surface-variant);
-  margin-bottom: 4px;
 }
-.condition-icon-wrap {
-  margin: 0 auto 4px;
-  font-size: 48px;
-  height: 56px; display: flex; align-items: center; justify-content: center;
-}
-.condition-icon-wrap .msym { font-size: 52px; color: var(--primary); }
-.temp-display {
-  font-size: 88px; font-weight: 200; line-height: 1;
+.hero-icon .msym { font-size: 44px; color: var(--primary); }
+.hero-temp {
+  font-size: 80px; font-weight: 200; line-height: 1;
   letter-spacing: -0.04em; color: var(--on-surface);
-  margin: 4px 0 8px;
 }
-.temp-display .unit { font-size: 40px; font-weight: 300; opacity: 0.7; vertical-align: super; margin-left: 2px; }
-.feels-hilo {
-  font-size: 14px; color: var(--on-surface-variant); font-weight: 500;
-  display: flex; align-items: center; justify-content: center; gap: 16px;
+.hero-temp .unit { font-size: 36px; font-weight: 300; opacity: 0.7; vertical-align: super; margin-left: 2px; }
+.hero-feels {
+  font-size: 13px; color: var(--on-surface-variant); font-weight: 500;
+  display: flex; align-items: center; gap: 14px; margin-top: 6px;
 }
-.feels-hilo span { display: flex; align-items: center; gap: 4px; }
+.hero-feels span { display: flex; align-items: center; gap: 3px; }
+
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--on-surface-variant);
+  margin: 16px 0 8px;
+}
 
 /* Hourly scroll */
 .hourly-wrap { margin-bottom: 14px; }
@@ -468,6 +456,14 @@ html, body {
 /* ═══════════════════════════════
    SEARCH SCREEN
 ═══════════════════════════════ */
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; color: var(--primary);
+  font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; padding: 0 0 14px; letter-spacing: 0.01em;
+}
+.back-btn .msym { font-size: 20px; }
+
 .search-bar {
   display: flex; align-items: center; gap: 10px;
   background: var(--surface-high);
@@ -601,22 +597,8 @@ html, body {
       <span id="ptr-text"></span>
     </div>
     <div id="screen-home" class="screen active"></div>
-    <div id="screen-forecast" class="screen"></div>
     <div id="screen-search" class="screen"></div>
   </div>
-
-  <!-- Bottom nav -->
-  <nav class="bottom-nav">
-    <button class="nav-tab active" data-tab="home" onclick="App.switchTab('home')">
-      <span class="msym">home</span>Home
-    </button>
-    <button class="nav-tab" data-tab="forecast" onclick="App.switchTab('forecast')">
-      <span class="msym">wb_sunny</span>Forecast
-    </button>
-    <button class="nav-tab" data-tab="search" onclick="App.switchTab('search')">
-      <span class="msym">search</span>Search
-    </button>
-  </nav>
 </div>
 
 <script>
@@ -902,7 +884,6 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   document.getElementById('app').style.background = '';
 
   renderHome();
-  renderForecast();
 
   try {
     const weather = await fetchWeather(lat, lon);
@@ -910,14 +891,12 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     const isDay = weather.current.is_day === 1;
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
-    renderForecast();
 
     // NWS detailed forecast in background (US only; silently skipped outside US)
     fetchNWSForecast(lat, lon).then(periods => {
       if (periods) {
         state.noaaForecast = periods;
         if (state.tab === 'home') renderHome();
-        if (state.tab === 'forecast') renderForecast();
       }
     });
 
@@ -1219,12 +1198,16 @@ function renderHome() {
 
   el.innerHTML = `
     <div class="hero">
-      <div class="condition-label">${wt(code)}</div>
-      <div class="condition-icon-wrap">${msym(icon)}</div>
-      <div class="temp-display">${temp}<span class="unit">°F</span></div>
-      <div class="feels-hilo">
-        <span>${msym('thermostat','font-size:14px')} Feels ${feels}°</span>
-        <span>${msym('keyboard_arrow_up','font-size:14px')}${hiToday}° ${msym('keyboard_arrow_down','font-size:14px')}${loToday}°</span>
+      <div class="hero-row">
+        <div class="hero-left">
+          <div class="hero-condition">${wt(code)}</div>
+          <div class="hero-icon">${msym(icon)}</div>
+        </div>
+        <div class="hero-temp">${temp}<span class="unit">°F</span></div>
+      </div>
+      <div class="hero-feels">
+        <span>${msym('thermostat','font-size:13px')} Feels ${feels}°</span>
+        <span>${msym('keyboard_arrow_up','font-size:13px')}${hiToday}° ${msym('keyboard_arrow_down','font-size:13px')}${loToday}°</span>
       </div>
     </div>
 
@@ -1261,6 +1244,9 @@ function renderHome() {
         <div class="cond-sub">${parseFloat(precip) > 0 ? `${precip}" today` : 'No precipitation'}</div>
       </div>
     </div>
+
+    <div class="section-label">7-Day Forecast</div>
+    ${buildForecastRows()}
 
     ${sunHTML}
     ${tideHTML}
@@ -1299,6 +1285,62 @@ function renderHomeError(msg) {
 /* ═══════════════════════════════
    RENDER: FORECAST
 ═══════════════════════════════ */
+function buildForecastRows() {
+  if (!state.weather) return '';
+  const { daily } = state.weather;
+  const now = new Date();
+  const allMax = Math.max(...daily.temperature_2m_max);
+  const allMin = Math.min(...daily.temperature_2m_min);
+  const totalRange = allMax - allMin || 1;
+  const noaaByDate = {};
+  if (state.noaaForecast) {
+    for (const p of state.noaaForecast) {
+      if (!p.startTime) continue;
+      const d = new Date(p.startTime);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (!noaaByDate[key]) noaaByDate[key] = [];
+      noaaByDate[key].push(p);
+    }
+  }
+  let rowsHTML = '';
+  for (let i = 0; i < Math.min(7, daily.time.length); i++) {
+    const rowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const dayLabel = i === 0 ? 'Today' : DAYS[rowDate.getDay()];
+    const isToday = i === 0;
+    const code = daily.weather_code[i];
+    const hi = round(daily.temperature_2m_max[i]);
+    const lo = round(daily.temperature_2m_min[i]);
+    const barLeft  = ((lo - allMin) / totalRange * 100).toFixed(1);
+    const barWidth = ((hi - lo) / totalRange * 100).toFixed(1);
+    const rowKey = rowDate.getFullYear() + '-' + String(rowDate.getMonth()+1).padStart(2,'0') + '-' + String(rowDate.getDate()).padStart(2,'0');
+    const noaaPeriods = noaaByDate[rowKey] || [];
+    const hasDetail = noaaPeriods.length > 0;
+    const detailInner = noaaPeriods.map(p => `<div class="noaa-period-block">
+      <div class="forecast-detail-name">${p.name}</div>
+      <div class="forecast-detail-text">${p.detailedForecast}</div>
+    </div>`).join('');
+    rowsHTML += `<div class="forecast-item">
+      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
+        <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
+        <div class="forecast-icon-wrap">${msym(h(code, true))}</div>
+        <div class="forecast-cond-wrap">
+          <div class="forecast-cond">${wt(code)}</div>
+        </div>
+        <div class="forecast-temps">
+          <div class="temp-lo">${lo}°</div>
+          <div class="temp-bar-wrap">
+            <div class="temp-bar-fill" style="left:${barLeft}%;width:${barWidth}%"></div>
+          </div>
+          <div class="temp-hi">${hi}°</div>
+        </div>
+        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="fc-${i}">expand_more</span>` : ''}</div>
+      </div>
+      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">${detailInner}</div>` : ''}
+    </div>`;
+  }
+  return `<div class="forecast-list">${rowsHTML}</div>`;
+}
+
 function buildSummaryText(daily) {
   const codes = daily.weather_code.slice(0, 7);
   const clearDays = codes.filter(c => c <= 2).length;
@@ -1336,113 +1378,6 @@ function bestDayIdx(daily) {
   return bestIdx;
 }
 
-function renderForecast() {
-  const el = document.getElementById('screen-forecast');
-  if (!state.weather) {
-    el.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Loading forecast…</div></div>`;
-    return;
-  }
-  const { daily } = state.weather;
-  const now = new Date();
-  const todayDow = now.getDay();
-
-  // Global min/max for temp bar scaling
-  const allMax = Math.max(...daily.temperature_2m_max);
-  const allMin = Math.min(...daily.temperature_2m_min);
-  const totalRange = allMax - allMin || 1;
-
-  // Build NOAA period lookup keyed by local date string "YYYY-MM-DD".
-  // Use startTime (a timezone-aware ISO datetime) so the local date is exact
-  // regardless of the user's UTC offset.
-  const noaaByDate = {};
-  if (state.noaaForecast) {
-    for (const p of state.noaaForecast) {
-      if (!p.startTime) continue;
-      const d = new Date(p.startTime);
-      const key = d.getFullYear() + '-' +
-        String(d.getMonth() + 1).padStart(2, '0') + '-' +
-        String(d.getDate()).padStart(2, '0');
-      if (!noaaByDate[key]) noaaByDate[key] = [];
-      noaaByDate[key].push(p);
-    }
-  }
-
-  let rowsHTML = '';
-  for (let i = 0; i < Math.min(7, daily.time.length); i++) {
-    // Use local date arithmetic — ISO date-only strings parse as UTC midnight,
-    // which shifts getDay() by one in negative-offset timezones (e.g. EDT).
-    const rowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-    const dayLabel = i === 0 ? 'Today' : DAYS[rowDate.getDay()];
-    const isToday = i === 0;
-    const code = daily.weather_code[i];
-    const hi = round(daily.temperature_2m_max[i]);
-    const lo = round(daily.temperature_2m_min[i]);
-    const isDay = true;
-
-    const barLeft  = ((lo - allMin) / totalRange * 100).toFixed(1);
-    const barWidth = ((hi - lo) / totalRange * 100).toFixed(1);
-
-    const srTime = daily.sunrise[i] ? fmt12(new Date(daily.sunrise[i])) : '—';
-    const ssTime = daily.sunset[i]  ? fmt12(new Date(daily.sunset[i]))  : '—';
-
-    const rowKey = rowDate.getFullYear() + '-' +
-      String(rowDate.getMonth() + 1).padStart(2, '0') + '-' +
-      String(rowDate.getDate()).padStart(2, '0');
-    const noaaPeriods = noaaByDate[rowKey] || [];
-    const hasDetail = noaaPeriods.length > 0;
-    const detailInner = noaaPeriods.map(p => `<div class="noaa-period-block">
-        <div class="forecast-detail-name">${p.name}</div>
-        <div class="forecast-detail-text">${p.detailedForecast}</div>
-      </div>`).join('');
-
-    rowsHTML += `<div class="forecast-item">
-      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
-        <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
-        <div class="forecast-icon-wrap">${msym(h(code, isDay))}</div>
-        <div class="forecast-cond-wrap">
-          <div class="forecast-cond">${wt(code)}</div>
-          <div class="forecast-sun-times"><span>${msym('wb_twilight','font-size:10px')} ${srTime}</span><span>${msym('wb_twilight','font-size:10px')} ${ssTime}</span></div>
-        </div>
-        <div class="forecast-temps">
-          <div class="temp-lo">${lo}°</div>
-          <div class="temp-bar-wrap">
-            <div class="temp-bar-fill" style="left:${barLeft}%;width:${barWidth}%"></div>
-          </div>
-          <div class="temp-hi">${hi}°</div>
-        </div>
-        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="fc-${i}">expand_more</span>` : ''}</div>
-      </div>
-      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">${detailInner}</div>` : ''}
-    </div>`;
-  }
-
-  const bestIdx = bestDayIdx(daily);
-  const bestDate = new Date(daily.time[bestIdx]);
-  const bestDayName = bestIdx === 0 ? 'Today' : DAYS_FULL[bestDate.getDay()];
-  const bestCode = daily.weather_code[bestIdx];
-  const bestUV = daily.uv_index_max[bestIdx] || 0;
-  const bestPrecip = daily.precipitation_sum[bestIdx] || 0;
-  let plannerReason = '';
-  if (bestPrecip < 0.01) plannerReason += 'Zero precipitation expected. ';
-  if (bestUV >= 6) plannerReason += `UV index ${round(bestUV)} (${uvText(bestUV)}). `;
-  if (bestCode <= 2) plannerReason += 'Clear skies all day.';
-
-  el.innerHTML = `
-    <div class="summary-card">
-      <div class="card-label">Next 7 Days</div>
-      <div class="summary-text">${buildSummaryText(daily)}</div>
-    </div>
-    <div class="forecast-list">${rowsHTML}</div>
-    <div class="planner-card">
-      <div class="planner-icon">${msym('event_available','font-size:32px;color:var(--tertiary)')}</div>
-      <div class="planner-content">
-        <div class="planner-label">Planner's View</div>
-        <div class="planner-day">Best Day: ${bestDayName}</div>
-        <div class="planner-reason">${plannerReason || wt(bestCode) + '. Great conditions for outdoor activities.'}</div>
-      </div>
-    </div>
-    <div class="powered-by">Forecast by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>`;
-}
 
 
 /* ═══════════════════════════════
@@ -1503,6 +1438,7 @@ function renderSearch(results = []) {
   }
 
   el.innerHTML = `
+    <button class="back-btn" onclick="App.switchTab('home')">${msym('arrow_back')} Back</button>
     <div class="search-bar">
       ${msym('search')}
       <input type="text" id="search-input" placeholder="Search by city or zip code" autocomplete="off" spellcheck="false"
@@ -1552,11 +1488,9 @@ function toggleForecastDetail(idx) {
 const App = {
   switchTab(tab) {
     state.tab = tab;
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${tab}`));
     if (tab === 'search') renderSearch();
     else if (tab === 'home') renderHome();
-    else if (tab === 'forecast') renderForecast();
   },
 
   goSearch() { App.switchTab('search'); },
