@@ -1,18 +1,35 @@
-# Weather Report!
+# Weather Report
 
-A PWA weather app for current conditions, 7-day forecasts, tides, and sun info — built by [Clam Code](https://github.com/wjdennen). Deployable on Cloudflare Pages.
+A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides, and sun info — built by [Clam Code](https://github.com/wjdennen). Deployed on Cloudflare Pages.
 
 ## Features
 
-- **Current conditions** — temperature, feels like, hi/lo, condition icon, hourly 24-hour scroll, wind, humidity, UV index, visibility
+- **Compact hero** — condition label + icon on the left, current temperature on the right; feels-like and hi/lo below
+- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label that stays pinned while you scroll
+- **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
+- **Conditions grid** — wind, humidity, UV index, visibility
+- **7-day forecast** — condition icons, temperature range bars, expandable NWS detail per day
+- **Sun** — sunrise, sunset, daylight duration, solar noon arc
+- **Tides** — nearest NOAA tide station (within 150 mi); today's tide curve as a smooth SVG chart; chronological high/low tide list with Today/Tomorrow day labels; stations with only hi/lo data get sinusoidal interpolation for the chart
 - **Atmospheric background** — gradient shifts dynamically based on weather condition and time of day
-- **Detailed forecast** — NWS paragraph-form forecast for the current period on the Home tab (e.g. "This Afternoon: Mostly cloudy, with a high near 87…"); tap any day row on the Forecast tab to expand its full NWS text; US locations only, silently skipped otherwise
-- **7-day forecast** — condition icons, temperature range bars, sunrise/sunset times per day, auto-generated outlook summary, and a Planner's View best-day picker
-- **Tides** — nearest NOAA tide station (within 150 mi), today's tide curve as a smooth SVG chart, high/low tide times and heights; stations that only have hi/lo data get sinusoidal interpolation for the chart
-- **Sun** — sunrise, sunset, daylight duration, solar noon arc, UV index
-- **Location search** — search by city name or US zip code, save multiple locations, persistent in localStorage
-- **Geolocation** — defaults to your current location via browser GPS with reverse geocoding
-- **PWA** — installable on iOS and Android, service worker for offline app shell
+- **Location search** — tap the location name or `+` button to search by city name or US zip code; save multiple locations; persistent in localStorage
+- **Geolocation** — defaults to browser GPS with reverse geocoding
+- **Build timestamp** — footer shows the exact deploy time so you always know which version is running
+- **PWA** — installable on iOS and Android; service worker caches the app shell and auto-busts the cache on every deploy
+
+## Layout
+
+Single full-screen scroll — no bottom navigation bar. Everything is on one page in this order:
+
+1. Compact weather hero
+2. Hourly scroll
+3. NWS detailed forecast
+4. Conditions grid (wind, humidity, UV, visibility)
+5. 7-day forecast
+6. Sun info
+7. Tides
+
+To change location, tap the location name or the `+` button in the top bar.
 
 ## Data sources (all free, no API key)
 
@@ -28,16 +45,19 @@ A PWA weather app for current conditions, 7-day forecasts, tides, and sun info �
 
 ## Stack
 
-- Vanilla HTML/CSS/JS — no framework, no build step
-- Cloudflare Pages (static assets via `wrangler.toml`)
+- Vanilla HTML/CSS/JS — no framework, all code in `public/index.html`
+- Minimal build step (`build.sh`) — stamps a build timestamp and service worker cache version at deploy time
+- Cloudflare Pages with Wrangler for deployment
 
 ## Local dev
 
 ```bash
 npx serve public
 # or
-npx vite public
+npx wrangler dev
 ```
+
+The `__BUILD_TIME__` and `__CACHE_VER__` placeholders in `index.html` and `sw.js` are only replaced during a Cloudflare build — locally they show as-is, which is fine for development.
 
 ## Deploy to Cloudflare Pages
 
@@ -49,36 +69,48 @@ npx vite public
    ```bash
    wrangler pages project create weather-report
    ```
-4. Connect your GitHub repo in the Cloudflare dashboard → Workers & Pages → your project → Settings → Git integration → connect to `wjdennen/weather-report`, branch `main`.
+4. In the Cloudflare dashboard → Workers & Pages → your project → **Settings → Build & Deploy**, set:
+   - **Build command:** `sh build.sh`
+   - **Build output directory:** *(leave as `/` — Wrangler reads the assets directory from `wrangler.toml`)*
+5. Connect your GitHub repo under **Settings → Git integration** → branch `main`.
 
-After that, every push to `main` triggers an automatic deploy.
+Every push to `main` triggers an automatic build and deploy.
+
+### What `build.sh` does
+
+Before Wrangler uploads the files, `build.sh` runs two `sed` replacements:
+
+- Stamps the current UTC time into `__BUILD_TIME__` in `public/index.html` — visible in the page footer so you always know which build is live.
+- Writes a unique timestamp-based version into `__CACHE_VER__` in `public/sw.js` — causes the service worker to invalidate its old cache on every deploy so users always receive the latest files.
 
 ### Manual deploy
 
 ```bash
+sh build.sh          # stamp placeholders first
 wrangler pages deploy public
 ```
 
 ## Refresh tide station list
 
-`stations.json` is a static snapshot of NOAA tide stations. To update it:
+`stations.json` is a static snapshot of NOAA tide stations. To regenerate it:
 
 ```bash
 ./scripts/refresh-stations.sh
 ```
 
-Then commit and push — no service worker cache bump needed.
+Commit and push — no cache bump needed.
 
 ## Project structure
 
 ```
 public/
-  index.html        Main SPA (all HTML, CSS, and JS inline)
-  manifest.json     PWA manifest
-  sw.js             Service worker (app shell cache)
-  _headers          Cloudflare Pages HTTP headers
-  stations.json     Bundled NOAA tide station list
+  index.html            Main SPA (all HTML, CSS, JS inline)
+  manifest.json         PWA manifest
+  sw.js                 Service worker (app shell cache; version stamped at build)
+  _headers              Cloudflare Pages HTTP headers
+  stations.json         Bundled NOAA tide station list (~3,450 stations)
 scripts/
   refresh-stations.sh   Re-downloads stations.json from NOAA
-wrangler.toml       Cloudflare Pages config
+build.sh                Stamps build timestamp + SW cache version before deploy
+wrangler.toml           Cloudflare Pages config (assets directory: ./public)
 ```
