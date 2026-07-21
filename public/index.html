@@ -448,6 +448,23 @@ html, body {
 .moon-stat { font-size: 12px; color: var(--on-surface-variant); }
 .moon-stat strong { color: var(--on-surface); }
 
+.radar-card {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.radar-img {
+  width: 100%; display: block;
+  border-radius: 0 0 16px 16px;
+}
+.radar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+}
+.radar-station { font-size: 12px; color: var(--on-surface-variant); }
+
 .uv-row {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface-high); border: 1px solid var(--outline-variant);
@@ -826,11 +843,12 @@ async function fetchNWSForecast(lat, lon) {
     if (!r.ok) return null; // 404 = outside US, or grid unavailable
     const pts = await r.json();
     const url = pts.properties?.forecast;
+    const radarStation = pts.properties?.radarStation || null;
     if (!url) return null;
     const r2 = await fetch(url, { headers: nwsHeaders });
     if (!r2.ok) return null;
     const fc = await r2.json();
-    return fc.properties?.periods || null;
+    return { periods: fc.properties?.periods || null, radarStation };
   } catch { return null; }
 }
 
@@ -918,9 +936,10 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     renderHome();
 
     // NWS detailed forecast in background (US only; silently skipped outside US)
-    fetchNWSForecast(lat, lon).then(periods => {
-      if (periods) {
-        state.noaaForecast = periods;
+    fetchNWSForecast(lat, lon).then(result => {
+      if (result) {
+        state.noaaForecast = result.periods;
+        state.radarStation = result.radarStation;
         if (state.tab === 'home') renderHome();
       }
     });
@@ -1308,6 +1327,16 @@ function renderHome() {
 
     <div class="section-label">7-Day Forecast</div>
     ${buildForecastRows()}
+
+    ${state.radarStation ? `
+    <div class="section-heading">Radar</div>
+    <div class="radar-card">
+      <div class="radar-header">
+        <span class="radar-station">${state.radarStation}</span>
+        <a href="https://radar.weather.gov/station/${state.radarStation}/standard" target="_blank" style="font-size:11px;color:var(--outline);text-decoration:none">NWS ↗</a>
+      </div>
+      <img class="radar-img" src="https://radar.weather.gov/ridge/standard/${state.radarStation}_loop.gif?t=${Math.floor(Date.now()/300000)}" alt="Radar for ${state.radarStation}" loading="lazy">
+    </div>` : ''}
 
     ${sunHTML}
     ${moonHTML}
