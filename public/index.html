@@ -449,19 +449,18 @@ html, body {
 .moon-stat strong { color: var(--on-surface); }
 
 .radar-card {
-  background: var(--surface-container);
+  background: #000;
   border: 1px solid var(--outline-variant);
   border-radius: 16px;
   overflow: hidden;
   margin-bottom: 14px;
 }
-.radar-img {
-  width: 100%; display: block;
-  border-radius: 0 0 16px 16px;
-}
-.radar-header {
+.radar-canvas { width: 100%; display: block; }
+.radar-footer {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-container);
 }
 .radar-station { font-size: 12px; color: var(--on-surface-variant); }
 
@@ -1030,6 +1029,123 @@ function moonPhaseInfo(date = new Date()) {
   return { ...phases[idx], illumination, age: Math.round(age) };
 }
 
+let _radarAnim = null;
+
+async function initRadar(canvas, lat, lon) {
+  if (_radarAnim) { clearInterval(_radarAnim); _radarAnim = null; }
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const Z = 8;
+  const TILE = 256;
+
+  // Convert lat/lon to fractional tile coordinates
+  const n = Math.pow(2, Z);
+  const tcx = (lon + 180) / 360 * n;
+  const latRad = lat * Math.PI / 180;
+  const tcy = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+
+  // Top-left corner in tile-pixel space
+  const tlX = tcx * TILE - W / 2;
+  const tlY = tcy * TILE - H / 2;
+  const tx0 = Math.floor(tlX / TILE);
+  const ty0 = Math.floor(tlY / TILE);
+  const offX = -(tlX - tx0 * TILE);
+  const offY = -(tlY - ty0 * TILE);
+  const tilesX = Math.ceil((W - offX) / TILE) + 1;
+  const tilesY = Math.ceil((H - offY) / TILE) + 1;
+
+  function loadImg(src) {
+    return new Promise(res => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = src;
+    });
+  }
+
+  // Base map tiles (CartoDB dark, no labels)
+  const basePromises = [];
+  for (let dy = 0; dy < tilesY; dy++) {
+    for (let dx = 0; dx < tilesX; dx++) {
+      const tx = tx0 + dx, ty = ty0 + dy;
+      const sub = 'abc'[(Math.abs(tx) + Math.abs(ty)) % 3];
+      basePromises.push(loadImg(`https://${sub}.basemaps.cartocdn.com/dark_nolabels/${Z}/${tx}/${ty}.png`));
+    }
+  }
+
+  // RainViewer radar frames
+  let frames = [];
+  try {
+    const rv = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    const data = await rv.json();
+    frames = (data.radar?.past || []).slice(-6);
+  } catch {}
+
+  const [baseTiles, radarFrames] = await Promise.all([
+    Promise.all(basePromises),
+    Promise.all(frames.map(f => {
+      const promises = [];
+      for (let dy = 0; dy < tilesY; dy++) {
+        for (let dx = 0; dx < tilesX; dx++) {
+          const tx = tx0 + dx, ty = ty0 + dy;
+          promises.push(loadImg(`https://tilecache.rainviewer.com${f.path}/256/${Z}/${tx}/${ty}/2/1_1.png`));
+        }
+      }
+      return Promise.all(promises);
+    }))
+  ]);
+
+  function drawFrame(fi) {
+    ctx.clearRect(0, 0, W, H);
+    // Base map
+    let i = 0;
+    for (let dy = 0; dy < tilesY; dy++) {
+      for (let dx = 0; dx < tilesX; dx++) {
+        if (baseTiles[i]) ctx.drawImage(baseTiles[i], offX + dx * TILE, offY + dy * TILE, TILE, TILE);
+        i++;
+      }
+    }
+    // Radar overlay
+    if (radarFrames[fi]) {
+      ctx.globalAlpha = 0.8;
+      i = 0;
+      for (let dy = 0; dy < tilesY; dy++) {
+        for (let dx = 0; dx < tilesX; dx++) {
+          if (radarFrames[fi][i]) ctx.drawImage(radarFrames[fi][i], offX + dx * TILE, offY + dy * TILE, TILE, TILE);
+          i++;
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    // Crosshair
+    ctx.strokeStyle = 'rgba(142,213,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, 4, 0, Math.PI * 2); ctx.stroke();
+    // Timestamp
+    if (frames[fi]) {
+      const label = new Date(frames[fi].time * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath(); ctx.roundRect(8, H - 28, 72, 20, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = '11px Inter,sans-serif';
+      ctx.fillText(label, 14, H - 13);
+    }
+  }
+
+  let fi = 0;
+  drawFrame(fi);
+  if (radarFrames.length > 1) {
+    _radarAnim = setInterval(() => {
+      if (!canvas.isConnected) { clearInterval(_radarAnim); _radarAnim = null; return; }
+      fi = (fi + 1) % radarFrames.length;
+      drawFrame(fi);
+    }, 600);
+  }
+}
+
 function sunArcSVG(sunriseISO, sunsetISO) {
   const W = 300, H = 80;
   const now = new Date();
@@ -1328,14 +1444,14 @@ function renderHome() {
     <div class="section-label">7-Day Forecast</div>
     ${buildForecastRows()}
 
-    ${state.radarStation ? `
+    ${state.lat ? `
     <div class="section-heading">Radar</div>
     <div class="radar-card">
-      <div class="radar-header">
-        <span class="radar-station">${state.radarStation}</span>
-        <a href="https://radar.weather.gov/station/${state.radarStation}/standard" target="_blank" style="font-size:11px;color:var(--outline);text-decoration:none">NWS ↗</a>
+      <canvas id="radar-canvas" class="radar-canvas" width="390" height="260"></canvas>
+      <div class="radar-footer">
+        <span class="radar-station">Animated · last 60 min</span>
+        <a href="https://www.rainviewer.com" target="_blank" style="font-size:11px;color:var(--outline);text-decoration:none">RainViewer ↗</a>
       </div>
-      <img class="radar-img" src="https://radar.weather.gov/ridge/standard/${state.radarStation}_loop.gif?t=${Math.floor(Date.now()/300000)}" alt="Radar for ${state.radarStation}" loading="lazy">
     </div>` : ''}
 
     ${sunHTML}
@@ -1365,6 +1481,10 @@ function renderHome() {
     };
     hScroll.addEventListener('scroll', updateLabels, { passive: true });
   }
+
+  // Kick off tile-based radar after DOM is ready
+  const radarCanvas = el.querySelector('#radar-canvas');
+  if (radarCanvas && state.lat) initRadar(radarCanvas, state.lat, state.lon);
 }
 
 function renderHomeError(msg) {
