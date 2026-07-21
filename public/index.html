@@ -1030,9 +1030,11 @@ function moonPhaseInfo(date = new Date()) {
 }
 
 let _radarAnim = null;
+let _radarGen = 0;
 
 async function initRadar(canvas, lat, lon) {
   if (_radarAnim) { clearInterval(_radarAnim); _radarAnim = null; }
+  const gen = ++_radarGen;
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
@@ -1144,13 +1146,28 @@ async function initRadar(canvas, lat, lon) {
     }
   }
 
+  // Bail if a newer initRadar call has started while we were loading tiles
+  if (gen !== _radarGen) return;
+
+  const footer = canvas.parentElement?.querySelector('.radar-station');
+
+  function updateFooter(fi) {
+    if (!footer || !frames[fi]) return;
+    const dots = frames.map((_, i) => i === fi ? '●' : '○').join(' ');
+    const label = new Date(frames[fi].time * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    footer.textContent = `${label}  ${dots}`;
+  }
+
   let fi = 0;
   drawFrame(fi);
+  updateFooter(fi);
+
   if (radarFrames.length > 1) {
     _radarAnim = setInterval(() => {
-      if (!canvas.isConnected) { clearInterval(_radarAnim); _radarAnim = null; return; }
+      if (gen !== _radarGen || !canvas.isConnected) { clearInterval(_radarAnim); _radarAnim = null; return; }
       fi = (fi + 1) % radarFrames.length;
       drawFrame(fi);
+      updateFooter(fi);
     }, 600);
   }
 }
