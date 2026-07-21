@@ -5,7 +5,11 @@
       "Bash(git rm *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(ls -la /private/tmp/claude-501/-Users-wjdennen-bin-weather-report/ 2>/dev/null | head -5 && du -sh /private/tmp/claude-501/ 2>/dev/null)",
+      "Bash(git -C /Users/wjdennen/bin/weather-report add public/index.html)",
+      "Bash(git -C /Users/wjdennen/bin/weather-report commit -m ' *)",
+      "Bash(git -C /Users/wjdennen/bin/weather-report push)"
     ]
   }
 }
