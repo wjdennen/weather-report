@@ -244,7 +244,20 @@ html, body {
 .hourly-chip.now .hourly-time { color: var(--primary); }
 .hourly-icon .msym { font-size: 20px; color: var(--primary); }
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
-.hourly-precip { font-size: 10px; font-weight: 500; color: rgba(142,213,255,0.7); }
+.hourly-precip-bar { width: 36px; height: 3px; border-radius: 2px; background: var(--outline-variant); overflow: hidden; }
+.hourly-precip-bar-fill { height: 100%; border-radius: 2px; background: rgba(142,213,255,0.85); transition: width 0.3s; }
+
+.alert-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
+  font-size: 13px; font-weight: 500; line-height: 1.4;
+}
+.alert-banner.warning { background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5; }
+.alert-banner.watch   { background: rgba(251,146,60,0.18); border: 1px solid rgba(251,146,60,0.45); color: #fdba74; }
+.alert-banner.advisory { background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.4); color: #fde68a; }
+.alert-banner .msym { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-event { font-weight: 700; }
+.alert-expires { font-size: 11px; opacity: 0.75; margin-top: 2px; }
 
 /* Pull-to-refresh */
 #ptr-bar {
@@ -852,6 +865,16 @@ async function fetchNWSForecast(lat, lon) {
   } catch { return null; }
 }
 
+async function fetchAlerts(lat, lon) {
+  try {
+    const nwsHeaders = { 'User-Agent': '(weather-report, dennen@gmail.com)' };
+    const r = await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`, { headers: nwsHeaders });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return (data.features || []).map(f => f.properties).filter(p => p?.event);
+  } catch { return []; }
+}
+
 async function fetchTides(stationId) {
   const today = dateStr(new Date());
   const base = `${NOAA}?begin_date=${today}&end_date=${today}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=WeatherReport&format=json`;
@@ -921,6 +944,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.tides = null;
   state.tideStation = null;
   state.noaaForecast = null;
+  state.alerts = null;
 
   document.getElementById('nav-location').textContent = name;
   document.getElementById('nav-pin').textContent = isGeo ? 'my_location' : 'location_on';
@@ -935,13 +959,17 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
 
-    // NWS detailed forecast in background (US only; silently skipped outside US)
+    // NWS detailed forecast + alerts in background (US only; silently skipped outside US)
     fetchNWSForecast(lat, lon).then(result => {
       if (result) {
         state.noaaForecast = result.periods;
         state.radarStation = result.radarStation;
         if (state.tab === 'home') renderHome();
       }
+    });
+    fetchAlerts(lat, lon).then(alerts => {
+      state.alerts = alerts;
+      if (state.tab === 'home') renderHome();
     });
 
     // Load tides in background; re-render home when data arrives
@@ -1251,7 +1279,7 @@ function renderHome() {
       <div class="hourly-time">${isNow ? 'Now' : fmtShort(t)}</div>
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
-      ${hPrec > 10 ? `<div class="hourly-precip">${hPrec}%</div>` : ''}
+      <div class="hourly-precip-bar"><div class="hourly-precip-bar-fill" style="width:${hPrec}%"></div></div>
     </div>`;
   }
 
@@ -1419,7 +1447,19 @@ function renderHome() {
     </div>`;
   }
 
+  const alertsHTML = (state.alerts || []).map(a => {
+    const sev = (a.severity || '').toLowerCase();
+    const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
+    const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error_outline' : 'info_outline';
+    const expires = a.expires ? ` · expires ${new Date(a.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : '';
+    return `<div class="alert-banner ${cls}">
+      ${msym(icon)}
+      <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
+    </div>`;
+  }).join('');
+
   el.innerHTML = `
+    ${alertsHTML}
     <div class="hero">
       <div class="hero-row">
         <div class="hero-left">
