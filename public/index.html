@@ -65,13 +65,6 @@ html, body {
   background: var(--surface);
   transition: background 1s ease;
 }
-@media (min-width: 768px) {
-  #app { max-width: 1100px; }
-  .screen { padding: 24px 28px 20px !important; }
-  .home-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-  .hero-temp { font-size: 100px; }
-  .hero-icon .msym { font-size: 56px; }
-}
 
 /* ── Top Nav ── */
 .top-nav {
@@ -1045,11 +1038,6 @@ async function initRadar(canvas, lat, lon) {
   const gen = ++_radarGen;
   if (!canvas) return;
 
-  // Resize canvas to its actual rendered width (handles desktop wider columns)
-  const renderedW = canvas.offsetWidth || canvas.width;
-  canvas.width = renderedW;
-  canvas.height = Math.round(renderedW * 260 / 390);
-
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const TILE = 256;
@@ -1432,76 +1420,70 @@ function renderHome() {
   }
 
   el.innerHTML = `
-    <div class="home-layout">
-      <div class="home-col">
-        <div class="hero">
-          <div class="hero-row">
-            <div class="hero-left">
-              <div class="hero-condition">${wt(code)}</div>
-              <div class="hero-icon">${msym(icon)}</div>
-            </div>
-            <div class="hero-temp">${temp}<span class="unit">°F</span></div>
-          </div>
-          <div class="hero-feels">
-            <span>${msym('thermostat','font-size:13px')} Feels ${feels}°</span>
-            <span>${msym('keyboard_arrow_up','font-size:13px')}${hiToday}° ${msym('keyboard_arrow_down','font-size:13px')}${loToday}°</span>
-          </div>
+    <div class="hero">
+      <div class="hero-row">
+        <div class="hero-left">
+          <div class="hero-condition">${wt(code)}</div>
+          <div class="hero-icon">${msym(icon)}</div>
         </div>
-
-        <div class="hourly-wrap">
-          <div class="hourly-label-bar">
-            <div class="hourly-hl">Today</div>
-            ${tomorrowChips ? `<div class="hourly-hl" style="left:100%">Tomorrow</div>` : ''}
-            ${dayAfterChips ? `<div class="hourly-hl" style="left:100%">${dayAfterName}</div>` : ''}
-          </div>
-          <div class="hourly-scroll">${hourlyHTML}</div>
-        </div>
-
-        ${noaaHTML}
-
-        <div class="conditions-grid">
-          <div class="cond-card">
-            <div class="cond-header">${msym('air','font-size:16px;color:var(--primary)')} <span class="cond-name">Wind</span></div>
-            <div class="cond-value">${wind} <span style="font-size:16px;font-weight:400">mph</span></div>
-            <div class="cond-sub">${windDir} · Gusts ${gusts} mph</div>
-          </div>
-          <div class="cond-card">
-            <div class="cond-header">${msym('humidity_percentage','font-size:16px;color:var(--primary)')} <span class="cond-name">Humidity</span></div>
-            <div class="cond-value">${humidity}<span style="font-size:16px;font-weight:400">%</span></div>
-            <div class="cond-sub">Dew point varies</div>
-          </div>
-          <div class="cond-card">
-            <div class="cond-header">${msym('wb_sunny','font-size:16px;color:var(--tertiary)')} <span class="cond-name">UV Index</span></div>
-            <div class="cond-value" style="color:${uvColor(uv)}">${uv}</div>
-            <div class="cond-sub">${uvText(uv)}</div>
-          </div>
-          <div class="cond-card">
-            <div class="cond-header">${msym('visibility','font-size:16px;color:var(--primary)')} <span class="cond-name">Visibility</span></div>
-            <div class="cond-value">${vis}</div>
-            <div class="cond-sub">${parseFloat(precip) > 0 ? `${precip}" today` : 'No precipitation'}</div>
-          </div>
-        </div>
+        <div class="hero-temp">${temp}<span class="unit">°F</span></div>
       </div>
-
-      <div class="home-col">
-        <div class="section-label">7-Day Forecast</div>
-        ${buildForecastRows()}
-
-        ${state.lat ? `
-        <div class="section-heading">Radar</div>
-        <div class="radar-card">
-          <canvas id="radar-canvas" class="radar-canvas" width="390" height="260"></canvas>
-          <div class="radar-footer">
-            <span class="radar-station">Animated · last 60 min</span>
-            <a href="https://www.rainviewer.com" target="_blank" style="font-size:11px;color:var(--outline);text-decoration:none">RainViewer ↗</a>
-          </div>
-        </div>` : ''}
-
-        ${sunHTML}
-        ${moonHTML}
-        ${tideHTML}
+      <div class="hero-feels">
+        <span>${msym('thermostat','font-size:13px')} Feels ${feels}°</span>
+        <span>${msym('keyboard_arrow_up','font-size:13px')}${hiToday}° ${msym('keyboard_arrow_down','font-size:13px')}${loToday}°</span>
       </div>
     </div>
+
+    <div class="hourly-wrap">
+      <div class="hourly-label-bar">
+        <div class="hourly-hl">Today</div>
+        ${tomorrowChips ? `<div class="hourly-hl" style="left:100%">Tomorrow</div>` : ''}
+        ${dayAfterChips ? `<div class="hourly-hl" style="left:100%">${dayAfterName}</div>` : ''}
+      </div>
+      <div class="hourly-scroll">${hourlyHTML}</div>
+    </div>
+
+    ${noaaHTML}
+
+    <div class="conditions-grid">
+      <div class="cond-card">
+        <div class="cond-header">${msym('air','font-size:16px;color:var(--primary)')} <span class="cond-name">Wind</span></div>
+        <div class="cond-value">${wind} <span style="font-size:16px;font-weight:400">mph</span></div>
+        <div class="cond-sub">${windDir} · Gusts ${gusts} mph</div>
+      </div>
+      <div class="cond-card">
+        <div class="cond-header">${msym('humidity_percentage','font-size:16px;color:var(--primary)')} <span class="cond-name">Humidity</span></div>
+        <div class="cond-value">${humidity}<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="cond-sub">Dew point varies</div>
+      </div>
+      <div class="cond-card">
+        <div class="cond-header">${msym('wb_sunny','font-size:16px;color:var(--tertiary)')} <span class="cond-name">UV Index</span></div>
+        <div class="cond-value" style="color:${uvColor(uv)}">${uv}</div>
+        <div class="cond-sub">${uvText(uv)}</div>
+      </div>
+      <div class="cond-card">
+        <div class="cond-header">${msym('visibility','font-size:16px;color:var(--primary)')} <span class="cond-name">Visibility</span></div>
+        <div class="cond-value">${vis}</div>
+        <div class="cond-sub">${parseFloat(precip) > 0 ? `${precip}" today` : 'No precipitation'}</div>
+      </div>
+    </div>
+
+    <div class="section-label">7-Day Forecast</div>
+    ${buildForecastRows()}
+
+    ${state.lat ? `
+    <div class="section-heading">Radar</div>
+    <div class="radar-card">
+      <canvas id="radar-canvas" class="radar-canvas" width="390" height="260"></canvas>
+      <div class="radar-footer">
+        <span class="radar-station">Animated · last 60 min</span>
+        <a href="https://www.rainviewer.com" target="_blank" style="font-size:11px;color:var(--outline);text-decoration:none">RainViewer ↗</a>
+      </div>
+    </div>` : ''}
+
+    ${sunHTML}
+    ${moonHTML}
+    ${tideHTML}
 
     <div class="powered-by">
       Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit}<br>built __BUILD_TIME__<br>a clamcode thing
