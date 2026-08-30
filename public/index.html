@@ -715,6 +715,7 @@ const state = {
   stations: null,
   stationsLoading: false,
   managing: false,
+  expandedAlerts: new Set(),
   searchTimer: null,
   get saved() { try { return JSON.parse(localStorage.getItem('wr-saved') || '[]'); } catch { return []; } },
   set saved(v) { localStorage.setItem('wr-saved', JSON.stringify(v)); },
@@ -1469,9 +1470,9 @@ function renderHome() {
       <div class="alert-banner-header">
         ${msym(icon)}
         <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
-        ${hasDetail ? `<span class="alert-chevron msym" id="ac-${i}">expand_more</span>` : ''}
+        ${hasDetail ? `<span class="alert-chevron msym" id="ac-${i}" style="${state.expandedAlerts.has(i) ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
       </div>
-      ${hasDetail ? `<div class="alert-detail" id="ad-${i}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
+      ${hasDetail ? `<div class="alert-detail" id="ad-${i}" style="${state.expandedAlerts.has(i) ? 'display:block' : ''}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1775,7 +1776,8 @@ function toggleAlert(idx) {
   const detail = document.getElementById('ad-' + idx);
   const chevron = document.getElementById('ac-' + idx);
   if (!detail) return;
-  const isOpen = detail.style.display === 'block';
+  const isOpen = state.expandedAlerts.has(idx);
+  if (isOpen) { state.expandedAlerts.delete(idx); } else { state.expandedAlerts.add(idx); }
   detail.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
