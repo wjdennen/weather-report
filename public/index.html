@@ -1463,7 +1463,7 @@ function renderHome() {
   const alertsHTML = alertsSource.map(a => {
     const sev = (a.severity || '').toLowerCase();
     const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
-    const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error_outline' : 'info_outline';
+    const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error' : 'info';
     const expires = a.expires ? ` · expires ${new Date(a.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : '';
     return `<div class="alert-banner ${cls}">
       ${msym(icon)}
@@ -1569,7 +1569,7 @@ function renderHome() {
 
 function renderHomeError(msg) {
   document.getElementById('screen-home').innerHTML = `
-    <div class="error-banner">${msym('error_outline')} <span>${msg || 'Could not load weather. Check your connection.'}</span></div>
+    <div class="error-banner">${msym('error')} <span>${msg || 'Could not load weather. Check your connection.'}</span></div>
     <button class="btn-primary" onclick="App.retry()" style="display:block;margin:20px auto">Try Again</button>`;
 }
 
