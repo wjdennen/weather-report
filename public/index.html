@@ -246,6 +246,7 @@ html, body {
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
 .hourly-precip-bar { width: 36px; height: 3px; border-radius: 2px; background: var(--outline-variant); overflow: hidden; }
 .hourly-precip-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.hourly-precip-pct { font-size: 10px; color: rgba(142,213,255,0.8); margin-top: 2px; line-height: 1; }
 
 .alert-banner {
   display: flex; align-items: flex-start; gap: 10px;
@@ -1283,6 +1284,7 @@ function renderHome() {
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
       <div class="hourly-precip-bar"><div class="hourly-precip-bar-fill" style="width:${hPrec}%;background:rgba(142,213,255,${amtOpacity})"></div></div>
+      ${hPrec > 0 ? `<div class="hourly-precip-pct">${hPrec}%</div>` : ''}
     </div>`;
   }
 
