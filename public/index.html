@@ -248,11 +248,10 @@ html, body {
 .hourly-precip-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
 .hourly-precip-pct { font-size: 10px; color: rgba(142,213,255,0.8); margin-top: 2px; line-height: 1; }
 
-.alert-banner {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
-  font-size: 13px; font-weight: 500; line-height: 1.4;
-}
+.alert-banner { border-radius: 12px; margin-bottom: 12px; font-size: 13px; font-weight: 500; line-height: 1.4; cursor: pointer; }
+.alert-banner-header { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; }
+.alert-banner-header .alert-chevron { margin-left: auto; flex-shrink: 0; opacity: 0.7; transition: transform 0.2s; }
+.alert-detail { display: none; font-size: 12px; font-weight: 400; line-height: 1.65; padding: 0 14px 12px 42px; opacity: 0.9; white-space: pre-wrap; }
 .alert-banner.warning { background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5; }
 .alert-banner.watch   { background: rgba(251,146,60,0.18); border: 1px solid rgba(251,146,60,0.45); color: #fdba74; }
 .alert-banner.advisory { background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.4); color: #fde68a; }
@@ -1455,19 +1454,24 @@ function renderHome() {
 
   const alertsSource = new URLSearchParams(location.search).get('alerts') === '1'
     ? [
-        { event: 'Tornado Warning', severity: 'Extreme', headline: 'Tornado Warning issued for your area', expires: new Date(Date.now() + 45 * 60000).toISOString() },
-        { event: 'Flash Flood Watch', severity: 'Moderate', headline: 'Flash Flood Watch issued for your area', expires: new Date(Date.now() + 6 * 3600000).toISOString() },
-        { event: 'Dense Fog Advisory', severity: 'Minor', headline: 'Dense Fog Advisory issued for your area', expires: new Date(Date.now() + 2 * 3600000).toISOString() },
+        { event: 'Tornado Warning', severity: 'Extreme', headline: 'Tornado Warning issued for your area', expires: new Date(Date.now() + 45 * 60000).toISOString(), description: 'THE NATIONAL WEATHER SERVICE IN TAMPA BAY HAS ISSUED A TORNADO WARNING FOR...\n\nA SEVERE THUNDERSTORM CAPABLE OF PRODUCING A TORNADO WAS LOCATED NEAR BRANDON, MOVING NORTHEAST AT 35 MPH.\n\nHAZARD: TORNADO\n\nSOURCE: RADAR INDICATED ROTATION\n\nIMPACT: FLYING DEBRIS WILL BE DANGEROUS TO THOSE CAUGHT WITHOUT SHELTER. MOBILE HOMES WILL BE DAMAGED OR DESTROYED. DAMAGE TO ROOFS, WINDOWS, AND VEHICLES WILL OCCUR. TREE DAMAGE IS LIKELY.\n\nTake shelter now in a sturdy building. Get to the lowest floor, away from windows.' },
+        { event: 'Flash Flood Watch', severity: 'Moderate', headline: 'Flash Flood Watch issued for your area', expires: new Date(Date.now() + 6 * 3600000).toISOString(), description: 'FLASH FLOOD WATCH IN EFFECT THROUGH LATE TONIGHT\n\n* WHAT: Flash flooding caused by excessive rainfall is possible.\n\n* WHERE: Portions of west central Florida.\n\n* WHEN: Through late tonight.\n\n* IMPACTS: Excessive runoff may result in flooding of rivers, creeks, streams, and other low-lying and flood-prone locations. Creeks and streams may rise out of their banks.\n\n* ADDITIONAL DETAILS: 2 to 4 inches of rainfall expected with locally higher amounts possible.' },
+        { event: 'Dense Fog Advisory', severity: 'Minor', headline: 'Dense Fog Advisory issued for your area', expires: new Date(Date.now() + 2 * 3600000).toISOString(), description: 'DENSE FOG ADVISORY IN EFFECT UNTIL 10 AM EDT\n\n* WHAT: Visibilities of one quarter mile or less in dense fog.\n\n* WHERE: Hillsborough and Pinellas counties.\n\n* WHEN: Until 10 AM EDT this morning.\n\n* IMPACTS: Hazardous driving conditions due to low visibility. Allow extra time and increase following distance.' },
       ]
     : (state.alerts || []);
-  const alertsHTML = alertsSource.map(a => {
+  const alertsHTML = alertsSource.map((a, i) => {
     const sev = (a.severity || '').toLowerCase();
     const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
     const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error' : 'info';
     const expires = a.expires ? ` · expires ${new Date(a.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : '';
-    return `<div class="alert-banner ${cls}">
-      ${msym(icon)}
-      <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
+    const hasDetail = !!a.description;
+    return `<div class="alert-banner ${cls}" ${hasDetail ? `onclick="toggleAlert(${i})"` : ''}>
+      <div class="alert-banner-header">
+        ${msym(icon)}
+        <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
+        ${hasDetail ? `<span class="alert-chevron msym" id="ac-${i}">expand_more</span>` : ''}
+      </div>
+      ${hasDetail ? `<div class="alert-detail" id="ad-${i}">${escHtml(a.description)}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1765,6 +1769,15 @@ function renderSearch(results = []) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleAlert(idx) {
+  const detail = document.getElementById('ad-' + idx);
+  const chevron = document.getElementById('ac-' + idx);
+  if (!detail) return;
+  const isOpen = detail.style.display === 'block';
+  detail.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 function toggleForecastDetail(idx) {
