@@ -1567,6 +1567,16 @@ function renderHome() {
     hScroll.addEventListener('scroll', updateLabels, { passive: true });
   }
 
+  // Restore expanded alert state after innerHTML wipe
+  if (state.expandedAlerts && state.expandedAlerts.size > 0) {
+    state.expandedAlerts.forEach(i => {
+      const detail = document.getElementById('ad-' + i);
+      const chevron = document.getElementById('ac-' + i);
+      if (detail) detail.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+    });
+  }
+
   // Kick off tile-based radar after DOM is ready
   const radarCanvas = el.querySelector('#radar-canvas');
   if (radarCanvas && state.lat) initRadar(radarCanvas, state.lat, state.lon);
