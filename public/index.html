@@ -251,7 +251,7 @@ html, body {
 .alert-banner { border-radius: 12px; margin-bottom: 12px; font-size: 13px; font-weight: 500; line-height: 1.4; cursor: pointer; }
 .alert-banner-header { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; }
 .alert-banner-header .alert-chevron { margin-left: auto; flex-shrink: 0; opacity: 0.7; transition: transform 0.2s; }
-.alert-detail { display: none; font-size: 12px; font-weight: 400; line-height: 1.65; padding: 0 14px 12px 42px; opacity: 0.9; white-space: pre-wrap; }
+.alert-detail { display: none; font-size: 12px; font-weight: 400; line-height: 1.65; padding: 0 14px 12px 42px; opacity: 0.9; }
 .alert-banner.warning { background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5; }
 .alert-banner.watch   { background: rgba(251,146,60,0.18); border: 1px solid rgba(251,146,60,0.45); color: #fdba74; }
 .alert-banner.advisory { background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.4); color: #fde68a; }
@@ -1471,7 +1471,7 @@ function renderHome() {
         <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
         ${hasDetail ? `<span class="alert-chevron msym" id="ac-${i}">expand_more</span>` : ''}
       </div>
-      ${hasDetail ? `<div class="alert-detail" id="ad-${i}">${escHtml(a.description)}</div>` : ''}
+      ${hasDetail ? `<div class="alert-detail" id="ad-${i}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }).join('');
 
