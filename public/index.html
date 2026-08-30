@@ -245,7 +245,7 @@ html, body {
 .hourly-icon .msym { font-size: 20px; color: var(--primary); }
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
 .hourly-precip-bar { width: 36px; height: 3px; border-radius: 2px; background: var(--outline-variant); overflow: hidden; }
-.hourly-precip-bar-fill { height: 100%; border-radius: 2px; background: rgba(142,213,255,0.85); transition: width 0.3s; }
+.hourly-precip-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
 
 .alert-banner {
   display: flex; align-items: flex-start; gap: 10px;
@@ -765,7 +765,7 @@ async function fetchWeather(lat, lon) {
     latitude: lat.toFixed(4),
     longitude: lon.toFixed(4),
     current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,visibility',
-    hourly: 'temperature_2m,weather_code,precipitation_probability',
+    hourly: 'temperature_2m,weather_code,precipitation_probability,precipitation',
     daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,uv_index_max,sunrise,sunset',
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
@@ -1275,11 +1275,14 @@ function renderHome() {
     const hCode = w.hourly.weather_code[idx];
     const hTemp = round(w.hourly.temperature_2m[idx]);
     const hPrec = w.hourly.precipitation_probability[idx];
+    const hAmt = w.hourly.precipitation[idx] || 0;
+    // width = probability; color intensity = amount (0→faint, 0.5in→vivid)
+    const amtOpacity = (0.25 + Math.min(1, hAmt / 0.5) * 0.75).toFixed(2);
     return `<div class="hourly-chip${isNow ? ' now' : ''}">
       <div class="hourly-time">${isNow ? 'Now' : fmtShort(t)}</div>
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
-      <div class="hourly-precip-bar"><div class="hourly-precip-bar-fill" style="width:${hPrec}%"></div></div>
+      <div class="hourly-precip-bar"><div class="hourly-precip-bar-fill" style="width:${hPrec}%;background:rgba(142,213,255,${amtOpacity})"></div></div>
     </div>`;
   }
 
