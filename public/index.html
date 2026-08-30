@@ -941,6 +941,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.lon = lon;
   state.name = name;
   state.isGeo = isGeo;
+  if (!isGeo) localStorage.setItem('wr-last', `${lat}_${lon}`);
   state.weather = null;
   state.tides = null;
   state.tideStation = null;
@@ -1947,7 +1948,14 @@ if ('serviceWorker' in navigator) {
 // Show geo prompt or request location on first load
 (function init() {
   renderSearch(); // pre-render search tab
-  App.useGeo();
+  const saved = state.saved;
+  if (saved.length > 0) {
+    const lastId = localStorage.getItem('wr-last');
+    const loc = (lastId && saved.find(s => s.id === lastId)) || saved[0];
+    loadLocation(loc.lat, loc.lon, loc.name, false);
+  } else {
+    App.useGeo();
+  }
 })();
 
 // Pull-to-refresh on Home tab
