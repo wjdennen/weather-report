@@ -10,3 +10,6 @@
 - **"Feels like" on hourly chips** — apparent temperature is already fetched; could replace or supplement the raw temp on the chip.
 - **Tide next high/low summary** — a single "next high tide in 3h 22m" line near the top would surface the most actionable tide info without scrolling.
 - **Precipitation type in forecast** — snow vs rain vs mix is buried in condition labels; could be more prominent in winter months.
+- **Precip probability number on hourly chip** — currently shown as bar width + color intensity (amount). A small numeric label (e.g. "40%") would make it more readable at a glance.
+- **Alert expiry countdown** — show "expires in 45m" instead of an absolute clock time; more immediately useful.
+- **More `?flag=1` test modes** — e.g. `?offline=1` to simulate stale/no data, `?night=1` to force night-time gradient, for easier UI testing without real conditions.

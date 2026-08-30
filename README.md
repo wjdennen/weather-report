@@ -5,8 +5,8 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 ## Features
 
 - **Compact hero** — condition label + icon on the left, current temperature on the right; feels-like and hi/lo below
-- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar on each chip
-- **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory); US locations only, silently absent elsewhere
+- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount)
+- **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory); tap to expand full NWS alert text; US locations only, silently absent elsewhere
 - **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
 - **Conditions grid** — wind, humidity, UV index, visibility
 - **7-day forecast** — condition icons, temperature range bars, NWS condition label, expandable NWS detail per day
@@ -16,7 +16,7 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 - **Tides** — nearest NOAA tide station (within 150 mi); today's tide curve as a smooth SVG chart; chronological high/low tide list with Today/Tomorrow day labels; stations with only hi/lo data get sinusoidal interpolation for the chart
 - **Atmospheric background** — gradient shifts dynamically based on weather condition and time of day
 - **Location search** — tap the location name or `+` button to search by city name or US zip code; save multiple locations; persistent in localStorage
-- **Geolocation** — defaults to browser GPS with reverse geocoding
+- **Geolocation** — defaults to browser GPS with reverse geocoding; skips geolocation on return visits if a saved location exists (loads instantly)
 - **Build version** — footer shows auto-incrementing build number (git commit count) and exact deploy timestamp
 - **PWA** — installable on iOS and Android; service worker caches the app shell and auto-busts the cache on every deploy
 
@@ -98,6 +98,14 @@ Before Wrangler uploads the files, `build.sh` runs two `sed` replacements:
 sh build.sh          # stamp placeholders first
 wrangler pages deploy public
 ```
+
+## Testing flags
+
+Append query params to the URL to test UI states without needing real data:
+
+| Flag | Effect |
+|------|--------|
+| `?alerts=1` | Injects a fake Tornado Warning, Flash Flood Watch, and Dense Fog Advisory so all three alert severity styles (red/orange/yellow) and the expandable detail text can be inspected |
 
 ## Refresh tide station list
 
