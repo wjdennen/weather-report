@@ -1453,7 +1453,14 @@ function renderHome() {
     </div>`;
   }
 
-  const alertsHTML = (state.alerts || []).map(a => {
+  const alertsSource = new URLSearchParams(location.search).get('alerts') === '1'
+    ? [
+        { event: 'Tornado Warning', severity: 'Extreme', headline: 'Tornado Warning issued for your area', expires: new Date(Date.now() + 45 * 60000).toISOString() },
+        { event: 'Flash Flood Watch', severity: 'Moderate', headline: 'Flash Flood Watch issued for your area', expires: new Date(Date.now() + 6 * 3600000).toISOString() },
+        { event: 'Dense Fog Advisory', severity: 'Minor', headline: 'Dense Fog Advisory issued for your area', expires: new Date(Date.now() + 2 * 3600000).toISOString() },
+      ]
+    : (state.alerts || []);
+  const alertsHTML = alertsSource.map(a => {
     const sev = (a.severity || '').toLowerCase();
     const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
     const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error_outline' : 'info_outline';
@@ -1948,15 +1955,6 @@ if ('serviceWorker' in navigator) {
 // Show geo prompt or request location on first load
 (function init() {
   renderSearch(); // pre-render search tab
-
-  // ?alerts=1 — inject fake alerts of all three severities for UI testing
-  if (new URLSearchParams(location.search).get('alerts') === '1') {
-    state.alerts = [
-      { event: 'Tornado Warning', severity: 'Extreme', headline: 'Tornado Warning issued for your area', expires: new Date(Date.now() + 45 * 60000).toISOString() },
-      { event: 'Flash Flood Watch', severity: 'Moderate', headline: 'Flash Flood Watch issued for your area', expires: new Date(Date.now() + 6 * 3600000).toISOString() },
-      { event: 'Dense Fog Advisory', severity: 'Minor', headline: 'Dense Fog Advisory issued for your area', expires: new Date(Date.now() + 2 * 3600000).toISOString() },
-    ];
-  }
 
   const saved = state.saved;
   if (saved.length > 0) {
