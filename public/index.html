@@ -1071,7 +1071,7 @@ async function initRadar(canvas, lat, lon) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const TILE = 256;
-  const Z_base = 8;   // CartoDB supports high zoom — detailed base map
+  const Z_base = 8;   // ESRI dark gray supports zoom 8 — detailed base map
   const Z_radar = 6;  // RainViewer radar max zoom
   const RS = Math.pow(2, Z_base - Z_radar); // = 4: each radar tile drawn at 1024px
 
@@ -1106,13 +1106,13 @@ async function initRadar(canvas, lat, lon) {
     });
   }
 
-  // Base map tiles (CartoDB dark, no labels) at zoom 8
+  // Base map tiles (ESRI World Dark Gray, no labels) at zoom 8 — free, no key
+  // ESRI tile order is Z/Y/X (row/col), opposite of slippy map Z/X/Y convention
   const basePromises = [];
   for (let dy = 0; dy < base.tilesY; dy++) {
     for (let dx = 0; dx < base.tilesX; dx++) {
       const tx = base.tx0 + dx, ty = base.ty0 + dy;
-      const sub = 'abc'[(Math.abs(tx) + Math.abs(ty)) % 3];
-      basePromises.push(loadImg(`https://${sub}.basemaps.cartocdn.com/dark_nolabels/${Z_base}/${tx}/${ty}.png`));
+      basePromises.push(loadImg(`https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${Z_base}/${ty}/${tx}`));
     }
   }
 

@@ -10,7 +10,7 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 - **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
 - **Conditions grid** — wind, humidity, UV index, visibility
 - **7-day forecast** — condition icons, temperature range bars, NWS condition label, expandable NWS detail per day
-- **Radar** — animated tile-based radar map centered on user location; CartoDB dark base map (zoom 8) with RainViewer radar overlay (zoom 6, last ~60 min, 6 frames); works globally
+- **Radar** — animated tile-based radar map centered on user location; ESRI World Dark Gray base map (zoom 8) with RainViewer radar overlay (zoom 6, last ~60 min, 6 frames); works globally
 - **Moon phase** — phase name, illumination %, and day in lunar cycle; calculated locally with no API call; new moon shown as an outlined circle (visible on dark background)
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc
 - **Tides** — nearest NOAA tide station (within 150 mi); today's tide curve as a smooth SVG chart; chronological high/low tide list with Today/Tomorrow day labels; stations with only hi/lo data get sinusoidal interpolation for the chart
@@ -48,7 +48,7 @@ To change location, tap the location name or the `+` button in the top bar.
 | Reverse geocoding (GPS → city name) | [BigDataCloud](https://api.bigdatacloud.net/) |
 | Detailed text forecasts + alerts (US only) | [NOAA NWS API](https://api.weather.gov/) |
 | Animated radar overlay | [RainViewer](https://www.rainviewer.com/api.html) |
-| Base map tiles | [CartoDB](https://carto.com/basemaps/) dark matter (no labels) |
+| Base map tiles | [ESRI](https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer) World Dark Gray (free, no key) |
 | Tide station list | Bundled `public/stations.json` (~3,450 NOAA stations) |
 
 ## Stack
