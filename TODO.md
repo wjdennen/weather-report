@@ -13,3 +13,11 @@
 - **Precip probability number on hourly chip** — currently shown as bar width + color intensity (amount). A small numeric label (e.g. "40%") would make it more readable at a glance.
 - **Alert expiry countdown** — show "expires in 45m" instead of an absolute clock time; more immediately useful.
 - **More `?flag=1` test modes** — e.g. `?offline=1` to simulate stale/no data, `?night=1` to force night-time gradient, for easier UI testing without real conditions.
+
+## E-ink devkit (`/api/eink-weather`, NOTE4C)
+
+- **NWS alerts** — red border/banner when a warning is active; reuse the existing alert-fetch logic from the main app.
+- **Next tide** — "Next high 3:15 PM"; reuse the existing nearest-station lookup.
+- **Rain timing** — "Rain from 6PM" instead of just the current condition; Open-Meteo hourly precip data is already fetched.
+- **Rotating second screen** — cycle between current conditions and a second view (tomorrow's forecast, sunrise/sunset + moon phase, or a short NWS text snippet). Each screen switch costs a full refresh (10+ sec on this panel), so keep the rotation interval long (5-15 min), not fast.
+- **Lower priority**: UV index, wind, humidity, air quality (Open-Meteo Air Quality API) — useful but less glanceable than the above.
