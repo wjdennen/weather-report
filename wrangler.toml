@@ -1,6 +1,6 @@
 name = "weather-report"
 compatibility_date = "2026-06-14"
-preview_urls = false
+preview_urls = true
 main = "src/worker.js"
 
 [assets]
