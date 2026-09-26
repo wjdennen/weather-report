@@ -246,6 +246,11 @@ html, body {
 .hourly-temp { font-size: 14px; font-weight: 600; color: var(--on-surface); }
 .hourly-precip-bar { width: 36px; height: 3px; border-radius: 2px; background: var(--outline-variant); overflow: hidden; }
 .hourly-precip-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.hourly-wind { font-size: 10px; font-weight: 500; color: var(--on-surface-variant); line-height: 1; white-space: nowrap; }
+.forecast-wind { font-size: 11px; color: var(--on-surface-variant); opacity: 0.85; white-space: nowrap; }
+.wind-arrow { display: inline-block; margin-right: 2px; }
+.wind-gust.strong { color: #fdba74; font-weight: 600; }
+.wind-gust.severe { color: #fca5a5; font-weight: 600; }
 .hourly-precip-pct { font-size: 10px; color: rgba(142,213,255,0.8); margin-top: 2px; line-height: 1; }
 
 .alert-banner { border-radius: 12px; margin-bottom: 12px; font-size: 13px; font-weight: 500; line-height: 1.4; cursor: pointer; }
@@ -730,6 +735,15 @@ const h = (code, isDay) => {
 };
 const wt = code => (WMO[code] || WMO[0]).t;
 const deg2comp = d => COMPASS[Math.round(d / 22.5) % 16];
+// Wind as "↗ 18 g35": arrow points where the wind is heading (direction is where it comes from);
+// gust shown only when it clearly exceeds the steady wind, colored amber at 30+ mph and red at 45+
+function windHTML(speed, gust, dir) {
+  const spd = round(speed), g = round(gust);
+  const arrow = dir != null ? `<span class="wind-arrow" style="transform:rotate(${Math.round(dir) + 180}deg)">↑</span>` : '';
+  const gCls = g >= 45 ? ' severe' : g >= 30 ? ' strong' : '';
+  const gustPart = g - spd >= 10 ? ` <span class="wind-gust${gCls}">g${g}</span>` : '';
+  return `${arrow}${spd}${gustPart}`;
+}
 const uvText = v => v <= 2 ? 'Low' : v <= 5 ? 'Moderate' : v <= 7 ? 'High' : v <= 10 ? 'Very High' : 'Extreme';
 const uvColor = v => v <= 2 ? '#8ed5ff' : v <= 5 ? '#ffc176' : v <= 7 ? '#f97316' : v <= 10 ? '#ef4444' : '#a855f7';
 const round = v => Math.round(v);
@@ -766,8 +780,8 @@ async function fetchWeather(lat, lon) {
     latitude: lat.toFixed(4),
     longitude: lon.toFixed(4),
     current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,visibility',
-    hourly: 'temperature_2m,weather_code,precipitation_probability,precipitation',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,uv_index_max,sunrise,sunset',
+    hourly: 'temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,sunrise,sunset',
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
     precipitation_unit: 'inch',
@@ -1284,6 +1298,7 @@ function renderHome() {
       <div class="hourly-time">${isNow ? 'Now' : fmtShort(t)}</div>
       <div class="hourly-icon">${msym(h(hCode, t.getHours() >= 6 && t.getHours() < 20))}</div>
       <div class="hourly-temp">${hTemp}°</div>
+      <div class="hourly-wind">${windHTML(w.hourly.wind_speed_10m[idx], w.hourly.wind_gusts_10m[idx], w.hourly.wind_direction_10m[idx])}</div>
       <div class="hourly-precip-bar"><div class="hourly-precip-bar-fill" style="width:${hPrec}%;background:rgba(142,213,255,${amtOpacity})"></div></div>
       ${hPrec > 0 ? `<div class="hourly-precip-pct">${hPrec}%</div>` : ''}
     </div>`;
@@ -1642,6 +1657,7 @@ function buildForecastRows() {
         <div class="forecast-icon-wrap">${msym(h(code, true))}</div>
         <div class="forecast-cond-wrap">
           <div class="forecast-cond">${condLabel}</div>
+          <div class="forecast-wind">${windHTML(daily.wind_speed_10m_max[i], daily.wind_gusts_10m_max[i], daily.wind_direction_10m_dominant[i])} mph</div>
         </div>
         <div class="forecast-temps">
           <div class="temp-lo">${lo}°</div>

@@ -5,11 +5,11 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 ## Features
 
 - **Compact hero** — condition label + icon on the left, current temperature on the right; feels-like and hi/lo below
-- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount)
+- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount); wind line per hour (`↓ 19 g46`) with an arrow pointing where the wind is heading, gusts shown only when 10+ mph above the steady wind, amber at 30+ mph and red at 45+
 - **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory) with the time the hazard ends (NWS `ends`, not the message `expires`); tap to expand full NWS alert text; US locations only, silently absent elsewhere
 - **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
 - **Conditions grid** — wind, humidity, UV index, visibility
-- **7-day forecast** — condition icons, temperature range bars, NWS condition label, expandable NWS detail per day
+- **7-day forecast** — condition icons, temperature range bars, NWS condition label, max wind/gust with dominant direction (same gust colors as hourly), expandable NWS detail per day
 - **Radar** — animated tile-based radar map centered on user location; ESRI World Dark Gray base map (zoom 8) with RainViewer radar overlay (zoom 6, last ~60 min, 6 frames); works globally
 - **Moon phase** — phase name, illumination %, and day in lunar cycle; calculated locally with no API call; new moon shown as an outlined circle (visible on dark background)
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc
