@@ -1464,7 +1464,15 @@ function renderHome() {
     const sev = (a.severity || '').toLowerCase();
     const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
     const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error' : 'info';
-    const expires = a.expires ? ` · expires ${new Date(a.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : '';
+    // NWS `expires` is when this message lapses (and gets reissued); `ends` is when the hazard ends
+    const endISO = a.ends || a.expires;
+    let expires = '';
+    if (endISO) {
+      const end = new Date(endISO);
+      const time = end.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+      const day = end.toDateString() === new Date().toDateString() ? '' : `${end.toLocaleDateString([], {weekday:'short'})} `;
+      expires = ` · until ${day}${time}`;
+    }
     const hasDetail = !!a.description;
     return `<div class="alert-banner ${cls}" ${hasDetail ? `onclick="toggleAlert(${i})"` : ''}>
       <div class="alert-banner-header">
