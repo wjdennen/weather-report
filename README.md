@@ -6,7 +6,7 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 
 - **Compact hero** — condition label + icon on the left, current temperature on the right; feels-like and hi/lo below
 - **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount)
-- **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory); tap to expand full NWS alert text; US locations only, silently absent elsewhere
+- **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory) with the time the hazard ends (NWS `ends`, not the message `expires`); tap to expand full NWS alert text; US locations only, silently absent elsewhere
 - **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
 - **Conditions grid** — wind, humidity, UV index, visibility
 - **7-day forecast** — condition icons, temperature range bars, NWS condition label, expandable NWS detail per day
