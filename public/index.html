@@ -1478,9 +1478,9 @@ function renderHome() {
       <div class="alert-banner-header">
         ${msym(icon)}
         <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
-        ${hasDetail ? `<span class="alert-chevron msym" id="ac-${i}" style="${state.expandedAlerts.has(i) ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
+        ${hasDetail ? `<span class="alert-chevron msym" id="alert-chev-${i}" style="${state.expandedAlerts.has(i) ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
       </div>
-      ${hasDetail ? `<div class="alert-detail" id="ad-${i}" style="display:${state.expandedAlerts.has(i) ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
+      ${hasDetail ? `<div class="alert-detail" id="alert-body-${i}" style="display:${state.expandedAlerts.has(i) ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1578,8 +1578,8 @@ function renderHome() {
   // Restore expanded alert state after innerHTML wipe
   if (state.expandedAlerts && state.expandedAlerts.size > 0) {
     state.expandedAlerts.forEach(i => {
-      const detail = document.getElementById('ad-' + i);
-      const chevron = document.getElementById('ac-' + i);
+      const detail = document.getElementById('alert-body-' + i);
+      const chevron = document.getElementById('alert-chev-' + i);
       if (detail) detail.style.display = 'block';
       if (chevron) chevron.style.transform = 'rotate(180deg)';
     });
@@ -1791,8 +1791,8 @@ function escHtml(s) {
 }
 
 function toggleAlert(idx) {
-  const detail = document.getElementById('ad-' + idx);
-  const chevron = document.getElementById('ac-' + idx);
+  const detail = document.getElementById('alert-body-' + idx);
+  const chevron = document.getElementById('alert-chev-' + idx);
   if (!detail) return;
   const isOpen = state.expandedAlerts.has(idx);
   if (isOpen) { state.expandedAlerts.delete(idx); } else { state.expandedAlerts.add(idx); }
