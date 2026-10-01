@@ -721,6 +721,8 @@ const state = {
   stationsLoading: false,
   managing: false,
   expandedAlerts: new Set(),
+  expandedForecast: new Set(),
+  loadGen: 0,
   searchTimer: null,
   get saved() { try { return JSON.parse(localStorage.getItem('wr-saved') || '[]'); } catch { return []; } },
   set saved(v) { localStorage.setItem('wr-saved', JSON.stringify(v)); },
@@ -763,6 +765,18 @@ function atmoGradient(code, isDay) {
 
 function msym(name, extra='') {
   return `<span class="msym" style="${extra}">${name}</span>`;
+}
+
+// Returns a Date whose ordinary getters (getHours, getDate, toDateString, ...) read
+// back the wall-clock time at the given UTC offset — not the browser's own timezone.
+// Open-Meteo (and, by proxy, nearby NOAA tide stations) return hourly/daily data as
+// timezone-naive local strings; parsing those with `new Date(...)` already preserves
+// their digits when read back the same way, so comparing a wall-clock "now" built this
+// way against those parsed dates is apples-to-apples regardless of where the browser is.
+function wallClockNow(utcOffsetSeconds) {
+  const shifted = new Date(Date.now() + (utcOffsetSeconds || 0) * 1000);
+  return new Date(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate(),
+                   shifted.getUTCHours(), shifted.getUTCMinutes(), shifted.getUTCSeconds());
 }
 
 function dateStr(d) {
@@ -890,8 +904,8 @@ async function fetchAlerts(lat, lon) {
   } catch { return []; }
 }
 
-async function fetchTides(stationId) {
-  const today = dateStr(new Date());
+async function fetchTides(stationId, utcOffsetSeconds) {
+  const today = dateStr(wallClockNow(utcOffsetSeconds));
   const base = `${NOAA}?begin_date=${today}&end_date=${today}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=WeatherReport&format=json`;
 
   const [hiloRes, hourlyRes] = await Promise.all([
@@ -907,15 +921,16 @@ async function fetchTides(stationId) {
   // If this station only has hilo predictions, synthesize hourly heights
   // using sinusoidal interpolation between consecutive high/low events
   if (!hourly.length && hilo.length >= 2) {
-    hourly = synthesizeHourly(hilo);
+    hourly = synthesizeHourly(hilo, today);
   }
 
   return { hilo, hourly };
 }
 
-function synthesizeHourly(hilo) {
-  // Parse hilo times relative to today midnight
-  const today = new Date(); today.setHours(0,0,0,0);
+function synthesizeHourly(hilo, todayStr) {
+  // Parse hilo times relative to the station's local midnight (the same calendar
+  // date requested from NOAA), not the browser's midnight
+  const today = new Date(`${todayStr.slice(0,4)}-${todayStr.slice(4,6)}-${todayStr.slice(6,8)}T00:00`);
   const events = hilo.map(p => {
     const d = new Date(p.t.replace(' ', 'T'));
     return { ms: d.getTime(), v: parseFloat(p.v), type: p.type };
@@ -951,6 +966,12 @@ function synthesizeHourly(hilo) {
    MAIN LOAD
 ═══════════════════════════════ */
 async function loadLocation(lat, lon, name, isGeo = false) {
+  // Each call gets its own generation number; background callbacks below check it's
+  // still current before touching `state`, so a slower fetch for a location the user
+  // has since navigated away from can't clobber the newer one's data.
+  const gen = ++state.loadGen;
+  const stillCurrent = () => state.loadGen === gen;
+
   state.lat = lat;
   state.lon = lon;
   state.name = name;
@@ -970,6 +991,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
 
   try {
     const weather = await fetchWeather(lat, lon);
+    if (!stillCurrent()) return;
     state.weather = weather;
     const isDay = weather.current.is_day === 1;
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
@@ -977,6 +999,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
 
     // NWS detailed forecast + alerts in background (US only; silently skipped outside US)
     fetchNWSForecast(lat, lon).then(result => {
+      if (!stillCurrent()) return;
       if (result) {
         state.noaaForecast = result.periods;
         state.radarStation = result.radarStation;
@@ -984,23 +1007,27 @@ async function loadLocation(lat, lon, name, isGeo = false) {
       }
     });
     fetchAlerts(lat, lon).then(alerts => {
+      if (!stillCurrent()) return;
       state.alerts = alerts;
       if (state.tab === 'home') renderHome();
     });
 
     // Load tides in background; re-render home when data arrives
     findNearestStation(lat, lon).then(async station => {
+      if (!stillCurrent()) return;
       if (!station) { if (state.tab === 'home') renderHome(); return; }
       state.tideStation = station;
       if (state.tab === 'home') renderHome();
       try {
-        state.tides = await fetchTides(station.id);
-      } catch { state.tides = null; }
-      if (state.tab === 'home') renderHome();
+        const tides = await fetchTides(station.id, weather.utc_offset_seconds);
+        if (!stillCurrent()) return;
+        state.tides = tides;
+      } catch { if (stillCurrent()) state.tides = null; }
+      if (stillCurrent() && state.tab === 'home') renderHome();
     });
 
   } catch(e) {
-    renderHomeError(e.message);
+    if (stillCurrent()) renderHomeError(e.message);
   }
 }
 
@@ -1217,9 +1244,8 @@ async function initRadar(canvas, lat, lon) {
   }
 }
 
-function sunArcSVG(sunriseISO, sunsetISO) {
+function sunArcSVG(sunriseISO, sunsetISO, now) {
   const W = 300, H = 80;
-  const now = new Date();
   const sr = new Date(sunriseISO), ss = new Date(sunsetISO);
   const total = ss - sr;
   const t = Math.max(0, Math.min(1, (now - sr) / total));
@@ -1277,7 +1303,7 @@ function renderHome() {
   const icon = h(code, isDay);
   const temp = round(c.temperature_2m);
   const feels = round(c.apparent_temperature);
-  const now = new Date();
+  const now = wallClockNow(w.utc_offset_seconds);
   const todayIdx = 0;
   const hiToday = round(w.daily.temperature_2m_max[todayIdx]);
   const loToday = round(w.daily.temperature_2m_min[todayIdx]);
@@ -1350,7 +1376,7 @@ function renderHome() {
   const sunHTML = `
     <div class="section-heading">Sun</div>
     <div class="sun-card">
-      <div class="sun-arc-wrap">${sunArcSVG(sr, ss)}</div>
+      <div class="sun-arc-wrap">${sunArcSVG(sr, ss, now)}</div>
       <div class="sun-times-row">
         <div class="sun-time-block">
           <div class="sun-time-label">${msym('wb_twilight','font-size:14px;color:var(--tertiary)')} Sunrise</div>
@@ -1475,7 +1501,13 @@ function renderHome() {
         { event: 'Dense Fog Advisory', severity: 'Minor', headline: 'Dense Fog Advisory issued for your area', expires: new Date(Date.now() + 2 * 3600000).toISOString(), description: 'DENSE FOG ADVISORY IN EFFECT UNTIL 10 AM EDT\n\n* WHAT: Visibilities of one quarter mile or less in dense fog.\n\n* WHERE: Hillsborough and Pinellas counties.\n\n* WHEN: Until 10 AM EDT this morning.\n\n* IMPACTS: Hazardous driving conditions due to low visibility. Allow extra time and increase following distance.' },
       ]
     : (state.alerts || []);
+  // Element-id-safe stable key for an alert: prefer NWS's own id, fall back to the
+  // headline text, so expand state tracks the alert itself rather than its position —
+  // a reorder or reissue on refresh won't expand/collapse the wrong one.
+  const akeyFor = (a, i) => String(a.id || a.headline || i).replace(/[^a-zA-Z0-9_-]/g, '_');
   const alertsHTML = alertsSource.map((a, i) => {
+    const akey = akeyFor(a, i);
+    const isOpen = state.expandedAlerts.has(akey);
     const sev = (a.severity || '').toLowerCase();
     const cls = sev === 'extreme' || sev === 'severe' ? 'warning' : sev === 'moderate' ? 'watch' : 'advisory';
     const icon = cls === 'warning' ? 'warning' : cls === 'watch' ? 'error' : 'info';
@@ -1489,13 +1521,13 @@ function renderHome() {
       expires = ` · until ${day}${time}`;
     }
     const hasDetail = !!a.description;
-    return `<div class="alert-banner ${cls}" ${hasDetail ? `onclick="toggleAlert(${i})"` : ''}>
+    return `<div class="alert-banner ${cls}" ${hasDetail ? `onclick="toggleDetail('alert', '${akey}')"` : ''}>
       <div class="alert-banner-header">
         ${msym(icon)}
         <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
-        ${hasDetail ? `<span class="alert-chevron msym" id="alert-chev-${i}" style="${state.expandedAlerts.has(i) ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
+        ${hasDetail ? `<span class="alert-chevron msym" id="alert-chev-${akey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
       </div>
-      ${hasDetail ? `<div class="alert-detail" id="alert-body-${i}" style="display:${state.expandedAlerts.has(i) ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
+      ${hasDetail ? `<div class="alert-detail" id="alert-body-${akey}" style="display:${isOpen ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1552,7 +1584,7 @@ function renderHome() {
     <div class="section-label">7-Day Forecast</div>
     ${buildForecastRows()}
 
-    ${state.lat ? `
+    ${state.lat != null ? `
     <div class="section-heading">Radar</div>
     <div class="radar-card">
       <canvas id="radar-canvas" class="radar-canvas" width="390" height="260"></canvas>
@@ -1602,7 +1634,7 @@ function renderHome() {
 
   // Kick off tile-based radar after DOM is ready
   const radarCanvas = el.querySelector('#radar-canvas');
-  if (radarCanvas && state.lat) initRadar(radarCanvas, state.lat, state.lon);
+  if (radarCanvas && state.lat != null) initRadar(radarCanvas, state.lat, state.lon);
 }
 
 function renderHomeError(msg) {
@@ -1617,7 +1649,7 @@ function renderHomeError(msg) {
 function buildForecastRows() {
   if (!state.weather) return '';
   const { daily } = state.weather;
-  const now = new Date();
+  const now = wallClockNow(state.weather.utc_offset_seconds);
   const allMax = Math.max(...daily.temperature_2m_max);
   const allMin = Math.min(...daily.temperature_2m_min);
   const totalRange = allMax - allMin || 1;
@@ -1642,6 +1674,8 @@ function buildForecastRows() {
     const barLeft  = ((lo - allMin) / totalRange * 100).toFixed(1);
     const barWidth = ((hi - lo) / totalRange * 100).toFixed(1);
     const rowKey = rowDate.getFullYear() + '-' + String(rowDate.getMonth()+1).padStart(2,'0') + '-' + String(rowDate.getDate()).padStart(2,'0');
+    const fkey = rowKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const isOpen = state.expandedForecast.has(rowKey);
     const noaaPeriods = noaaByDate[rowKey] || [];
     const hasDetail = noaaPeriods.length > 0;
     const detailInner = noaaPeriods.map(p => `<div class="noaa-period-block">
@@ -1652,7 +1686,7 @@ function buildForecastRows() {
     const dayPeriod = noaaPeriods.find(p => !p.name?.toLowerCase().includes('night'));
     const condLabel = dayPeriod?.shortForecast || wt(code);
     rowsHTML += `<div class="forecast-item">
-      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleForecastDetail(${i})"` : ''}>
+      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleDetail('forecast', '${rowKey}')"` : ''}>
         <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
         <div class="forecast-icon-wrap">${msym(h(code, true))}</div>
         <div class="forecast-cond-wrap">
@@ -1666,9 +1700,9 @@ function buildForecastRows() {
           </div>
           <div class="temp-hi">${hi}°</div>
         </div>
-        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="fc-${i}">expand_more</span>` : ''}</div>
+        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="forecast-chev-${fkey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}</div>
       </div>
-      ${hasDetail ? `<div class="forecast-detail" id="fd-${i}">${detailInner}</div>` : ''}
+      ${hasDetail ? `<div class="forecast-detail" id="forecast-body-${fkey}" style="display:${isOpen ? 'block' : 'none'}">${detailInner}</div>` : ''}
     </div>`;
   }
   return `<div class="forecast-list">${rowsHTML}</div>`;
@@ -1721,7 +1755,7 @@ function renderSearch(results = []) {
   const saved = state.saved;
   const managing = state.managing;
 
-  const geoCard = state.lat ? `
+  const geoCard = state.lat != null ? `
     <div class="location-card ${state.isGeo ? 'active-loc' : ''}" onclick="App.useGeo()">
       <div class="location-card-header">
         <div class="location-card-name">
@@ -1806,21 +1840,19 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function toggleAlert(idx) {
-  const detail = document.getElementById('alert-body-' + idx);
-  const chevron = document.getElementById('alert-chev-' + idx);
+// Shared expand/collapse for alert banners and 7-day forecast rows. Both are tracked
+// by a stable key (alert id/headline, or the row's calendar date) rather than array
+// index, so state survives a renderHome() re-render and stays attached to the right
+// item even if the underlying list reorders or the location changes.
+function toggleDetail(kind, key) {
+  const set = kind === 'alert' ? state.expandedAlerts : state.expandedForecast;
+  const prefix = kind === 'alert' ? 'alert' : 'forecast';
+  const domKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const detail = document.getElementById(`${prefix}-body-${domKey}`);
+  const chevron = document.getElementById(`${prefix}-chev-${domKey}`);
   if (!detail) return;
-  const isOpen = state.expandedAlerts.has(idx);
-  if (isOpen) { state.expandedAlerts.delete(idx); } else { state.expandedAlerts.add(idx); }
-  detail.style.display = isOpen ? 'none' : 'block';
-  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
-
-function toggleForecastDetail(idx) {
-  const detail = document.getElementById('fd-' + idx);
-  const chevron = document.getElementById('fc-' + idx);
-  if (!detail) return;
-  const isOpen = detail.style.display === 'block';
+  const isOpen = set.has(key);
+  if (isOpen) { set.delete(key); } else { set.add(key); }
   detail.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
@@ -1923,8 +1955,9 @@ const App = {
 
     await loadLocation(lat, lon, name, false);
 
-    // Update saved card with fresh weather
-    if (state.weather) {
+    // Update saved card with fresh weather — only if we're still showing this
+    // location (the user may have switched again before the fetch resolved)
+    if (state.weather && state.lat === lat && state.lon === lon) {
       const w = state.weather;
       saved = state.saved;
       const idx = saved.findIndex(s => s.id === id);
@@ -1945,8 +1978,9 @@ const App = {
     App.switchTab('home');
     await loadLocation(loc.lat, loc.lon, loc.name, false);
 
-    // Refresh saved card temp
-    if (state.weather) {
+    // Refresh saved card temp — only if we're still showing this location (the
+    // user may have switched again before the fetch resolved)
+    if (state.weather && state.lat === loc.lat && state.lon === loc.lon) {
       const w = state.weather;
       const saved = state.saved;
       const idx = saved.findIndex(s => s.id === id);
@@ -1989,7 +2023,7 @@ const App = {
   },
 
   retry() {
-    if (state.lat) loadLocation(state.lat, state.lon, state.name, state.isGeo);
+    if (state.lat != null) loadLocation(state.lat, state.lon, state.name, state.isGeo);
     else App.useGeo();
   },
 };
@@ -2038,7 +2072,7 @@ if ('serviceWorker' in navigator) {
   }
 
   screen.addEventListener('touchstart', e => {
-    if (state.tab !== 'home' || screen.scrollTop > 0 || !state.lat) return;
+    if (state.tab !== 'home' || screen.scrollTop > 0 || state.lat == null) return;
     if (e.touches[0].clientY > 120) return;
     startY = e.touches[0].clientY;
   }, { passive: true });
@@ -2060,7 +2094,7 @@ if ('serviceWorker' in navigator) {
   screen.addEventListener('touchend', e => {
     if (!pulling) { startY = 0; return; }
     const dy = e.changedTouches[0].clientY - startY;
-    if (dy >= THRESHOLD && state.lat) {
+    if (dy >= THRESHOLD && state.lat != null) {
       bar.classList.add('ptr-loading');
       bar.style.height = '52px';
       icon.style.transform = '';
