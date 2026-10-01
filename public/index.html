@@ -779,11 +779,11 @@ function wallClockNow(utcOffsetSeconds) {
                    shifted.getUTCHours(), shifted.getUTCMinutes(), shifted.getUTCSeconds());
 }
 
-function dateStr(d) {
+function dateStr(d, sep = '') {
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  return `${y}${m}${dd}`;
+  return `${y}${sep}${m}${sep}${dd}`;
 }
 
 /* ═══════════════════════════════
@@ -1658,7 +1658,7 @@ function buildForecastRows() {
     for (const p of state.noaaForecast) {
       if (!p.startTime) continue;
       const d = new Date(p.startTime);
-      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      const key = dateStr(d, '-');
       if (!noaaByDate[key]) noaaByDate[key] = [];
       noaaByDate[key].push(p);
     }
@@ -1673,7 +1673,7 @@ function buildForecastRows() {
     const lo = round(daily.temperature_2m_min[i]);
     const barLeft  = ((lo - allMin) / totalRange * 100).toFixed(1);
     const barWidth = ((hi - lo) / totalRange * 100).toFixed(1);
-    const rowKey = rowDate.getFullYear() + '-' + String(rowDate.getMonth()+1).padStart(2,'0') + '-' + String(rowDate.getDate()).padStart(2,'0');
+    const rowKey = dateStr(rowDate, '-');
     const fkey = rowKey.replace(/[^a-zA-Z0-9_-]/g, '_');
     const isOpen = state.expandedForecast.has(rowKey);
     const noaaPeriods = noaaByDate[rowKey] || [];
