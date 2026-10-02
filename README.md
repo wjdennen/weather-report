@@ -14,6 +14,7 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 - **Moon phase** — phase name, illumination %, and day in lunar cycle; calculated locally with no API call; new moon shown as an outlined circle (visible on dark background)
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc
 - **Tides** — nearest NOAA tide station (within 150 mi); today's tide curve as a smooth SVG chart; chronological high/low tide list with Today/Tomorrow day labels; stations with only hi/lo data get sinusoidal interpolation for the chart
+- **Beach pick** — near Aquidneck Island / Little Compton, RI only: ranks 10 local beaches by how much of the next 4 hours of forecast wind blows in your face (each beach's facing direction measured from OpenStreetMap coastline data), with a best pick and an "any beach is fine" call under 8 mph; same logic as the macOS widget (`macos-widget/WeatherWidget/Beaches.swift`)
 - **Atmospheric background** — gradient shifts dynamically based on weather condition and time of day
 - **Location search** — tap the location name or `+` button to search by city name or US zip code; save multiple locations; persistent in localStorage
 - **Geolocation** — defaults to browser GPS with reverse geocoding; skips geolocation on return visits if a saved location exists (loads instantly)
@@ -29,11 +30,12 @@ Single full-screen scroll — no bottom navigation bar. Everything is on one pag
 3. Hourly scroll (with precip probability bars)
 4. NWS detailed forecast
 5. Conditions grid (wind, humidity, UV, visibility)
-6. 7-day forecast
-7. Radar (animated tile map)
-8. Sun info
-9. Moon phase
-10. Tides
+6. Beach pick (only near Aquidneck Island / Little Compton)
+7. 7-day forecast
+8. Radar (animated tile map)
+9. Sun info
+10. Moon phase
+11. Tides
 
 To change location, tap the location name or the `+` button in the top bar.
 

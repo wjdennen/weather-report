@@ -379,6 +379,34 @@ html, body {
 .planner-reason { font-size: 13px; color: var(--on-surface-variant); line-height: 1.5; }
 
 /* ═══════════════════════════════
+   BEACH PICK
+═══════════════════════════════ */
+.beach-card {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.beach-head { display: flex; align-items: center; gap: 12px; }
+.beach-head .msym { font-size: 30px; color: var(--primary); }
+.beach-title { font-size: 20px; font-weight: 700; color: var(--on-surface); line-height: 1.15; }
+.beach-sub { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
+.beach-list { margin-top: 12px; border-top: 1px solid var(--outline-variant); }
+.beach-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--outline-variant); font-size: 14px; color: var(--on-surface);
+}
+.beach-row:last-child { border-bottom: none; }
+.beach-row.best { font-weight: 700; }
+.beach-rel { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.beach-rel.back { color: var(--primary); }
+.beach-rel.side { color: var(--on-surface-variant); }
+.beach-rel.face { color: var(--tertiary); }
+.beach-rel.face.strong { color: var(--error); }
+.beach-note { font-size: 11px; color: var(--outline); margin-top: 10px; line-height: 1.4; }
+
+/* ═══════════════════════════════
    TIDES SCREEN
 ═══════════════════════════════ */
 .section-heading {
@@ -866,6 +894,87 @@ function haversine(lat1, lon1, lat2, lon2) {
   const dLon = (lon2-lon1)*Math.PI/180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+/* ═══════════════════════════════
+   BEACH PICK
+   Mirrors macos-widget/WeatherWidget/Beaches.swift. `facing` is the compass heading you look toward the
+   water (measured from OpenStreetMap coastline geometry); wind FROM that heading blows in your face.
+   Listed in tie-break order: when several beaches are equally good the earlier one wins.
+═══════════════════════════════ */
+const BEACHES = [
+  { name: 'Second Beach',      facing: 195 },
+  { name: 'Third Beach',       facing: 80  },
+  { name: "Easton's Beach",    facing: 157 },
+  { name: 'Sandy Point',       facing: 85  },
+  { name: 'Gooseberry Beach',  facing: 220 },
+  { name: 'Island Park Beach', facing: 155 },
+  { name: 'South Shore Beach', facing: 140 },
+  { name: 'Goosewing Beach',   facing: 160 },
+  { name: "Teddy's Beach",     facing: 155 },
+  { name: 'King Park Beach',   facing: 300 },
+];
+const BEACH_CENTER = [41.52, -71.25];  // Aquidneck Island / Little Compton
+const BEACH_MAX_MI = 40;               // only show near the beaches
+const BEACH_LIGHT_MPH = 8;             // avg mph below which any beach is fine
+const BEACH_WINDOW_H = 4;              // average the next few hours, not just right now
+const BEACH_GOOD_MPH = 3;              // mph in your face still counted as "good"
+
+function beachAdvice(w, lat, lon, startIdx) {
+  if (lat == null || haversine(lat, lon, BEACH_CENTER[0], BEACH_CENTER[1]) > BEACH_MAX_MI) return null;
+  const speeds = w.hourly.wind_speed_10m.slice(startIdx, startIdx + BEACH_WINDOW_H);
+  const dirs = w.hourly.wind_direction_10m.slice(startIdx, startIdx + BEACH_WINDOW_H);
+  if (!speeds.length || speeds.some(v => v == null)) return null;
+  const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+  const rows = BEACHES.map(b => {
+    // signed = wind speed pushing onto the beach (positive = in your face, negative = at your back)
+    const signed = speeds.reduce((sum, sp, i) => sum + sp * Math.cos((dirs[i] - b.facing) * Math.PI / 180), 0) / speeds.length;
+    const ratio = avgSpeed > 0 ? signed / avgSpeed : 0;
+    return { beach: b, signed, onshore: Math.max(0, signed),
+             rel: ratio > 0.5 ? 'face' : ratio < -0.35 ? 'back' : 'side' };
+  });
+  const minOnshore = Math.min(...rows.map(r => r.onshore));
+  const best = rows.find(r => r.onshore <= minOnshore + 1);
+  const also = rows.filter(r => r !== best && r.onshore <= Math.max(BEACH_GOOD_MPH, minOnshore + 1))
+                   .sort((a, b) => a.onshore - b.onshore).slice(0, 3);
+  return {
+    avgSpeed, best, also,
+    anyFine: avgSpeed < BEACH_LIGHT_MPH,
+    strongOffshore: best.rel === 'back' && avgSpeed >= 20,
+    ranked: [...rows].sort((a, b) => a.onshore - b.onshore),
+  };
+}
+
+function buildBeachHTML(adv) {
+  if (!adv) return '';
+  const relText = { back: 'At your back', side: 'From the side', face: 'In your face' };
+  let sub;
+  if (adv.anyFine) sub = `Light wind (${round(adv.avgSpeed)} mph avg)`;
+  else {
+    sub = { back: 'Wind at your back', side: 'Wind from the side', face: 'Least wind in your face' }[adv.best.rel];
+    if (adv.strongOffshore) sub += ' · strong offshore, careful with floats';
+    else if (adv.also.length) sub += ' · also ' + adv.also.map(r => r.beach.name).join(', ');
+  }
+  const rows = adv.ranked.map(r => {
+    const strong = r.rel === 'face' && r.signed >= 15 ? ' strong' : '';
+    return `<div class="beach-row${r === adv.best && !adv.anyFine ? ' best' : ''}">
+      <span>${r.beach.name}</span>
+      <span class="beach-rel ${r.rel}${strong}">${relText[r.rel]}</span>
+    </div>`;
+  }).join('');
+  return `
+    <div class="section-label">Beach Pick</div>
+    <div class="beach-card">
+      <div class="beach-head">
+        ${msym('beach_access')}
+        <div>
+          <div class="beach-title">${adv.anyFine ? 'Any beach is fine' : 'Best: ' + adv.best.beach.name}</div>
+          <div class="beach-sub">${sub}</div>
+        </div>
+      </div>
+      <div class="beach-list">${rows}</div>
+      <div class="beach-note">Based on the next ${BEACH_WINDOW_H} hours of forecast wind and which way each beach faces. Wind at the water's edge can differ from the forecast.</div>
+    </div>`;
 }
 
 async function findNearestStation(lat, lon) {
@@ -1363,6 +1472,7 @@ function renderHome() {
   const visMi = c.visibility != null ? round(c.visibility / 1609) : null;
   const vis = visMi != null ? (visMi >= 10 ? '10+ mi' : `${visMi} mi`) : '—';
   const gusts = round(c.wind_gusts_10m);
+  const beachHTML = buildBeachHTML(beachAdvice(w, state.lat, state.lon, nowH));
 
   // Sun section
   const sr = w.daily.sunrise[0];
@@ -1580,6 +1690,8 @@ function renderHome() {
         <div class="cond-sub">${parseFloat(precip) > 0 ? `${precip}" today` : 'No precipitation'}</div>
       </div>
     </div>
+
+    ${beachHTML}
 
     <div class="section-label">7-Day Forecast</div>
     ${buildForecastRows()}
