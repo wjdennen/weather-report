@@ -1,6 +1,9 @@
 name = "weather-report"
+main = "worker/index.js"
 compatibility_date = "2026-06-14"
 preview_urls = true
 
 [assets]
 directory = "./public"
+# Only /api/* runs the Worker; every other path is served directly from ./public as before.
+run_worker_first = ["/api/*"]

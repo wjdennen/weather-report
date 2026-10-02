@@ -465,6 +465,17 @@ html, body {
 .sun-time-val { font-size: 22px; font-weight: 700; color: var(--on-surface); }
 .sun-time-sub { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
 
+.sun-quality {
+  margin: 12px 0; padding: 12px 14px;
+  background: var(--surface-high); border: 1px solid var(--outline-variant); border-radius: 12px;
+}
+.sun-quality-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sun-quality-label { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--on-surface); }
+.sun-quality-badge { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.sun-quality-badge.low  { background: rgba(190,198,224,0.15); color: var(--secondary); }
+.sun-quality-badge.mid  { background: rgba(142,213,255,0.15); color: var(--primary); }
+.sun-quality-badge.high { background: rgba(255,193,118,0.18); color: var(--tertiary); }
+.sun-quality-sub { font-size: 12px; color: var(--on-surface-variant); margin-top: 6px; }
 .sun-stats-row { display: flex; gap: 10px; }
 .sun-stat {
   flex: 1; background: var(--surface-high); border-radius: 12px; padding: 12px 14px;
@@ -753,6 +764,7 @@ const state = {
   expandedAlerts: new Set(),
   expandedForecast: new Set(),
   beachOpen: false,
+  sunsetQuality: null,
   loadGen: 0,
   searchTimer: null,
   get saved() { try { return JSON.parse(localStorage.getItem('wr-saved') || '[]'); } catch { return []; } },
@@ -1092,6 +1104,17 @@ function synthesizeHourly(hilo, todayStr) {
 /* ═══════════════════════════════
    MAIN LOAD
 ═══════════════════════════════ */
+// Sunsethue sunset-quality forecast, via our Worker proxy (worker/index.js) so the API key stays
+// server-side. Resolves null on any failure (including no Worker, e.g. a plain local static server).
+async function fetchSunsetQuality(lat, lon, date) {
+  try {
+    const r = await fetch(`/api/sunset?lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}&date=${date}`);
+    if (!r.ok) return null;
+    const q = await r.json();
+    return typeof q.quality === 'number' ? q : null;
+  } catch { return null; }
+}
+
 async function loadLocation(lat, lon, name, isGeo = false) {
   // Each call gets its own generation number; background callbacks below check it's
   // still current before touching `state`, so a slower fetch for a location the user
@@ -1109,6 +1132,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.tideStation = null;
   state.noaaForecast = null;
   state.alerts = null;
+  state.sunsetQuality = null;
 
   document.getElementById('nav-location').textContent = name;
   document.getElementById('nav-pin').textContent = isGeo ? 'my_location' : 'location_on';
@@ -1123,6 +1147,14 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     const isDay = weather.current.is_day === 1;
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
+
+    // Sunset quality in background: tonight's sunset, or tomorrow's once today's has passed
+    const sunIdx = wallClockNow(weather.utc_offset_seconds) > new Date(weather.daily.sunset[0]) ? 1 : 0;
+    fetchSunsetQuality(lat, lon, weather.daily.time[sunIdx]).then(q => {
+      if (!stillCurrent() || !q) return;
+      state.sunsetQuality = { ...q, tonight: sunIdx === 0 };
+      if (state.tab === 'home') renderHome();
+    });
 
     // NWS detailed forecast + alerts in background (US only; silently skipped outside US)
     fetchNWSForecast(lat, lon).then(result => {
@@ -1501,6 +1533,31 @@ function renderHome() {
   const daylightM = Math.floor((daylightMs % 3600000) / 60000);
   const noon = new Date((srDate.getTime() + ssDate.getTime()) / 2);
 
+  // Sunset quality (Sunsethue); absent until/unless the Worker returns data
+  let sunQualityHTML = '';
+  const sq = state.sunsetQuality;
+  if (sq) {
+    const toWall = iso => {
+      const sh = new Date(new Date(iso).getTime() + w.utc_offset_seconds * 1000);
+      return new Date(sh.getUTCFullYear(), sh.getUTCMonth(), sh.getUTCDate(), sh.getUTCHours(), sh.getUTCMinutes());
+    };
+    const level = sq.quality >= 0.6 ? 'high' : sq.quality >= 0.3 ? 'mid' : 'low';
+    const parts = [];
+    if (typeof sq.cloud_cover === 'number') parts.push(`Cloud cover ${round(sq.cloud_cover * 100)}%`);
+    if (typeof sq.direction === 'number') parts.push(`sets toward ${deg2comp(sq.direction)}`);
+    const golden = Array.isArray(sq.golden_hour) && sq.golden_hour.length === 2
+      ? `Golden hour ${fmt12(toWall(sq.golden_hour[0]))} – ${fmt12(toWall(sq.golden_hour[1]))}` : '';
+    sunQualityHTML = `
+      <div class="sun-quality">
+        <div class="sun-quality-top">
+          <div class="sun-quality-label">${msym('wb_twilight','font-size:16px;color:var(--tertiary)')} ${sq.tonight ? "Tonight's" : "Tomorrow's"} sunset</div>
+          <div class="sun-quality-badge ${level}">${escHtml(sq.quality_text || '')} · ${round(sq.quality * 100)}%</div>
+        </div>
+        ${parts.length ? `<div class="sun-quality-sub">${parts.join(' · ')}</div>` : ''}
+        ${golden ? `<div class="sun-quality-sub">${golden}</div>` : ''}
+      </div>`;
+  }
+
   const sunHTML = `
     <div class="section-heading">Sun</div>
     <div class="sun-card">
@@ -1515,6 +1572,7 @@ function renderHome() {
           <div class="sun-time-val">${fmt12(ssDate)}</div>
         </div>
       </div>
+      ${sunQualityHTML}
       <div class="sun-stats-row">
         <div class="sun-stat">
           <div class="sun-stat-label">${msym('light_mode')} Daylight</div>
@@ -1729,7 +1787,7 @@ function renderHome() {
     ${tideHTML}
 
     <div class="powered-by">
-      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit}<br>v__BUILD_NUM__ · built __BUILD_TIME__<br>a clamcode thing
+      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit}${sq ? ' · Sunset forecast by <a href="https://sunsethue.com" target="_blank">Sunsethue</a>' : ''}<br>v__BUILD_NUM__ · built __BUILD_TIME__<br>a clamcode thing
     </div>`;
 
   // Slide hourly day labels as user scrolls — TODAY stays frozen, then slides out as TOMORROW slides in
