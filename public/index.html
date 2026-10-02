@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Weather Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700&display=swap" rel="stylesheet">
@@ -685,28 +685,41 @@ html, body {
   font-family: 'Inter', sans-serif; font-size: 14px; cursor: pointer;
   text-decoration: underline;
 }
+
+/* ── Accessibility ── */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+[role="button"]:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .loading-spinner { animation: none; border-top-color: var(--outline-variant); }
+}
 </style>
 </head>
 <body>
 <div id="app">
   <!-- Top nav -->
   <header class="top-nav">
-    <div class="top-nav-left" onclick="App.goSearch()">
-      <span class="msym" id="nav-pin">location_on</span>
+    <div class="top-nav-left" role="button" tabindex="0" aria-label="Change location" onclick="App.goSearch()">
+      <span class="msym" id="nav-pin" aria-hidden="true">location_on</span>
       <span class="location-name" id="nav-location">Weather Report</span>
     </div>
-    <button class="nav-add-btn" onclick="App.goSearch()" title="Search locations">
-      <span class="msym">add</span>
+    <button class="nav-add-btn" onclick="App.goSearch()" title="Search locations" aria-label="Search locations">
+      <span class="msym" aria-hidden="true">add</span>
     </button>
   </header>
 
   <!-- Screens -->
   <div class="screens">
     <div id="ptr-bar">
-      <span class="msym" id="ptr-icon">refresh</span>
+      <span class="msym" id="ptr-icon" aria-hidden="true">refresh</span>
       <span id="ptr-text"></span>
     </div>
-    <div id="screen-home" class="screen active"></div>
+    <div id="screen-home" class="screen active" aria-live="polite"></div>
     <div id="screen-search" class="screen"></div>
   </div>
 </div>
@@ -818,7 +831,7 @@ function atmoGradient(code, isDay) {
 }
 
 function msym(name, extra='') {
-  return `<span class="msym" style="${extra}">${name}</span>`;
+  return `<span class="msym" aria-hidden="true" style="${extra}">${name}</span>`;
 }
 
 // Returns a Date whose ordinary getters (getHours, getDate, toDateString, ...) read
@@ -995,13 +1008,13 @@ function buildBeachHTML(adv) {
   return `
     <div class="section-label">Beach Pick</div>
     <div class="beach-card">
-      <div class="beach-head" onclick="toggleBeach()">
+      <div class="beach-head" role="button" tabindex="0" aria-expanded="${state.beachOpen ? 'true' : 'false'}" aria-controls="beach-body" onclick="toggleBeach()">
         ${msym('beach_access')}
         <div>
           <div class="beach-title">${adv.anyFine ? 'Any beach is fine' : 'Best: ' + adv.best.beach.name}</div>
           <div class="beach-sub">${sub}</div>
         </div>
-        <span class="msym beach-chev" id="beach-chev" style="${state.beachOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>
+        <span class="msym beach-chev" id="beach-chev" aria-hidden="true" style="${state.beachOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>
       </div>
       <div id="beach-body" style="display:${state.beachOpen ? 'block' : 'none'}">
         <div class="beach-list">${rows}</div>
@@ -1016,6 +1029,7 @@ function toggleBeach() {
   const chev = document.getElementById('beach-chev');
   if (body) body.style.display = state.beachOpen ? 'block' : 'none';
   if (chev) chev.style.transform = state.beachOpen ? 'rotate(180deg)' : '';
+  document.querySelector('.beach-head')?.setAttribute('aria-expanded', String(state.beachOpen));
 }
 
 async function findNearestStation(lat, lon) {
@@ -1444,7 +1458,12 @@ async function initRadar(canvas, lat, lon) {
   drawFrame(fi);
   updateFooter(fi);
 
-  if (radarFrames.length > 1) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion && radarFrames.length > 1) {
+    fi = radarFrames.length - 1; // static: show the most recent frame
+    drawFrame(fi);
+    updateFooter(fi);
+  } else if (radarFrames.length > 1) {
     _radarAnim = setInterval(() => {
       if (gen !== _radarGen || !canvas.isConnected) { clearInterval(_radarAnim); _radarAnim = null; return; }
       fi = (fi + 1) % radarFrames.length;
@@ -1775,11 +1794,11 @@ function renderHome() {
       expires = ` · until ${day}${time}`;
     }
     const hasDetail = !!a.description;
-    return `<div class="alert-banner ${cls}" ${hasDetail ? `onclick="toggleDetail('alert', '${akey}')"` : ''}>
+    return `<div class="alert-banner ${cls}" ${hasDetail ? `role="button" tabindex="0" aria-expanded="${isOpen}" aria-controls="alert-body-${akey}" onclick="toggleDetail('alert', '${akey}')"` : ''}>
       <div class="alert-banner-header">
         ${msym(icon)}
-        <div><div class="alert-event">${a.event}</div><div class="alert-expires">${a.headline?.split(' issued')[0] || ''}${expires}</div></div>
-        ${hasDetail ? `<span class="alert-chevron msym" id="alert-chev-${akey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
+        <div><div class="alert-event">${escHtml(a.event || '')}</div><div class="alert-expires">${escHtml(a.headline?.split(' issued')[0] || '')}${expires}</div></div>
+        ${hasDetail ? `<span class="alert-chevron msym" aria-hidden="true" id="alert-chev-${akey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
       </div>
       ${hasDetail ? `<div class="alert-detail" id="alert-body-${akey}" style="display:${isOpen ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
@@ -1895,7 +1914,7 @@ function renderHome() {
 
 function renderHomeError(msg) {
   document.getElementById('screen-home').innerHTML = `
-    <div class="error-banner">${msym('error')} <span>${msg || 'Could not load weather. Check your connection.'}</span></div>
+    <div class="error-banner" role="alert">${msym('error')} <span>${escHtml(msg || 'Could not load weather. Check your connection.')}</span></div>
     <button class="btn-primary" onclick="App.retry()" style="display:block;margin:20px auto">Try Again</button>`;
 }
 
@@ -1942,7 +1961,7 @@ function buildForecastRows() {
     const dayPeriod = noaaPeriods.find(p => !p.name?.toLowerCase().includes('night'));
     const condLabel = dayPeriod?.shortForecast || wt(code);
     rowsHTML += `<div class="forecast-item">
-      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `onclick="toggleDetail('forecast', '${rowKey}')"` : ''}>
+      <div class="forecast-row${hasDetail ? ' has-detail' : ''}" ${hasDetail ? `role="button" tabindex="0" aria-expanded="${isOpen}" aria-controls="forecast-body-${fkey}" onclick="toggleDetail('forecast', '${rowKey}')"` : ''}>
         <div class="forecast-day ${isToday ? 'today' : ''}">${dayLabel}</div>
         <div class="forecast-icon-wrap">${msym(h(code, true))}</div>
         <div class="forecast-cond-wrap">
@@ -1956,7 +1975,7 @@ function buildForecastRows() {
           </div>
           <div class="temp-hi">${hi}°</div>
         </div>
-        <div class="forecast-expand">${hasDetail ? `<span class="msym" id="forecast-chev-${fkey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}</div>
+        <div class="forecast-expand">${hasDetail ? `<span class="msym" aria-hidden="true" id="forecast-chev-${fkey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}</div>
       </div>
       ${hasDetail ? `<div class="forecast-detail" id="forecast-body-${fkey}" style="display:${isOpen ? 'block' : 'none'}">${detailInner}</div>` : ''}
     </div>`;
@@ -2012,7 +2031,7 @@ function renderSearch(results = []) {
   const managing = state.managing;
 
   const geoCard = state.lat != null ? `
-    <div class="location-card ${state.isGeo ? 'active-loc' : ''}" onclick="App.useGeo()">
+    <div class="location-card ${state.isGeo ? 'active-loc' : ''}" role="button" tabindex="0" onclick="App.useGeo()">
       <div class="location-card-header">
         <div class="location-card-name">
           Current Location
@@ -2024,7 +2043,7 @@ function renderSearch(results = []) {
         <div class="location-card-cond">${state.weather ? wt(state.weather.current.weather_code) : ''}</div>
         ${state.weather ? `<div class="location-card-hilo">H:<span>${round(state.weather.daily.temperature_2m_max[0])}°</span> L:<span>${round(state.weather.daily.temperature_2m_min[0])}°</span></div>` : ''}
       </div>
-    </div>` : `<div class="location-card" onclick="App.useGeo()" style="text-align:center;padding:20px">
+    </div>` : `<div class="location-card" role="button" tabindex="0" onclick="App.useGeo()" style="text-align:center;padding:20px">
       ${msym('my_location','color:var(--primary);font-size:28px')}
       <div style="font-size:15px;font-weight:600;margin-top:8px">Enable Current Location</div>
       <div style="font-size:13px;color:var(--on-surface-variant);margin-top:4px">Tap to request GPS access</div>
@@ -2033,40 +2052,41 @@ function renderSearch(results = []) {
   let savedHTML = '';
   for (const loc of saved) {
     const isCurrent = !state.isGeo && state.lat === loc.lat && state.lon === loc.lon;
-    savedHTML += `<div class="location-card ${isCurrent ? 'active-loc' : ''} ${managing ? 'managing' : ''}" onclick="App.selectSaved('${loc.id}')">
-      <button class="delete-btn" onclick="event.stopPropagation();App.deleteSaved('${loc.id}')">Remove</button>
+    savedHTML += `<div class="location-card ${isCurrent ? 'active-loc' : ''} ${managing ? 'managing' : ''}" role="button" tabindex="0" onclick="App.selectSaved('${escHtml(loc.id)}')">
+      <button class="delete-btn" aria-label="Remove ${escHtml(loc.name)}" onclick="event.stopPropagation();App.deleteSaved('${escHtml(loc.id)}')">Remove</button>
       <div class="location-card-header">
-        <div class="location-card-name">${loc.name}<small>${loc.country || ''}</small></div>
+        <div class="location-card-name">${escHtml(loc.name)}<small>${escHtml(loc.country || '')}</small></div>
         <div class="location-card-temp">${loc.temp != null ? loc.temp + '°' : '—'}</div>
       </div>
       <div class="location-card-footer">
-        <div class="location-card-cond">${loc.cond || ''}</div>
+        <div class="location-card-cond">${escHtml(loc.cond || '')}</div>
         ${loc.hi != null ? `<div class="location-card-hilo">H:<span>${loc.hi}°</span> L:<span>${loc.lo}°</span></div>` : ''}
       </div>
     </div>`;
   }
 
+  state.searchResults = results;
   let resultsHTML = '';
   if (results.length) {
-    for (const r of results) {
+    results.forEach((r, i) => {
       const meta = [r.admin1, r.country_code].filter(Boolean).join(', ');
-      resultsHTML += `<div class="search-result-item" onclick="App.selectResult(${r.latitude},${r.longitude},'${escHtml(r.name)}','${escHtml(r.country||'')}')">
+      resultsHTML += `<div class="search-result-item" role="button" tabindex="0" onclick="App.selectResultAt(${i})">
         <div>
-          <div class="result-name">${r.name}</div>
-          <div class="result-meta">${meta}</div>
+          <div class="result-name">${escHtml(r.name)}</div>
+          <div class="result-meta">${escHtml(meta)}</div>
         </div>
         <div class="result-add">${msym('add_circle')}</div>
       </div>`;
-    }
+    });
   }
 
   el.innerHTML = `
-    <button class="back-btn" onclick="App.switchTab('home')">${msym('arrow_back')} Back</button>
+    <button class="back-btn" onclick="App.switchTab('home')" aria-label="Back to weather">${msym('arrow_back')} Back</button>
     <div class="search-bar">
       ${msym('search')}
-      <input type="text" id="search-input" placeholder="Search by city or zip code" autocomplete="off" spellcheck="false"
+      <input type="text" id="search-input" placeholder="Search by city or zip code" aria-label="Search by city or zip code" autocomplete="off" spellcheck="false"
         oninput="App.onSearch(this.value)" value="${escHtml(state.searchQuery||'')}">
-      <button class="clear-btn" onclick="App.clearSearch()">${msym('close')}</button>
+      <button class="clear-btn" onclick="App.clearSearch()" aria-label="Clear search">${msym('close')}</button>
     </div>
 
     ${results.length ? `<div class="search-results">${resultsHTML}</div>` : ''}
@@ -2093,7 +2113,7 @@ function renderSearch(results = []) {
 }
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // Shared expand/collapse for alert banners and 7-day forecast rows. Both are tracked
@@ -2111,6 +2131,8 @@ function toggleDetail(kind, key) {
   if (isOpen) { set.delete(key); } else { set.add(key); }
   detail.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  const trigger = kind === 'alert' ? detail.parentElement : detail.previousElementSibling;
+  trigger?.setAttribute('aria-expanded', String(!isOpen));
 }
 
 /* ═══════════════════════════════
@@ -2194,6 +2216,11 @@ const App = {
         showGeoError(msg);
       });
     }, { timeout: 10000, maximumAge: 300000 });
+  },
+
+  selectResultAt(i) {
+    const r = state.searchResults?.[i];
+    if (r) App.selectResult(r.latitude, r.longitude, r.name, r.country || '');
   },
 
   async selectResult(lat, lon, name, country) {
@@ -2304,6 +2331,16 @@ if ('serviceWorker' in navigator) {
     App.useGeo();
   }
 })();
+
+// Keyboard activation for non-<button> controls marked role="button"
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target;
+  if (t instanceof HTMLElement && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON') {
+    e.preventDefault();
+    t.click();
+  }
+});
 
 // Pull-to-refresh on Home tab
 (function initPTR() {
