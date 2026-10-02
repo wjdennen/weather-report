@@ -270,7 +270,7 @@ struct LargeView: View {
     let d: WeatherData
     var body: some View {
         let c = d.current
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Header(d: d)
