@@ -388,8 +388,10 @@ html, body {
   padding: 16px;
   margin-bottom: 14px;
 }
-.beach-head { display: flex; align-items: center; gap: 12px; }
+.beach-head { display: flex; align-items: center; gap: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.beach-chev { margin-left: auto; flex-shrink: 0; opacity: 0.7; transition: transform 0.2s; }
 .beach-head .msym { font-size: 30px; color: var(--primary); }
+.beach-head .msym.beach-chev { font-size: 24px; color: var(--on-surface-variant); }
 .beach-title { font-size: 20px; font-weight: 700; color: var(--on-surface); line-height: 1.15; }
 .beach-sub { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
 .beach-list { margin-top: 12px; border-top: 1px solid var(--outline-variant); }
@@ -750,6 +752,7 @@ const state = {
   managing: false,
   expandedAlerts: new Set(),
   expandedForecast: new Set(),
+  beachOpen: false,
   loadGen: 0,
   searchTimer: null,
   get saved() { try { return JSON.parse(localStorage.getItem('wr-saved') || '[]'); } catch { return []; } },
@@ -965,16 +968,27 @@ function buildBeachHTML(adv) {
   return `
     <div class="section-label">Beach Pick</div>
     <div class="beach-card">
-      <div class="beach-head">
+      <div class="beach-head" onclick="toggleBeach()">
         ${msym('beach_access')}
         <div>
           <div class="beach-title">${adv.anyFine ? 'Any beach is fine' : 'Best: ' + adv.best.beach.name}</div>
           <div class="beach-sub">${sub}</div>
         </div>
+        <span class="msym beach-chev" id="beach-chev" style="${state.beachOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>
       </div>
-      <div class="beach-list">${rows}</div>
-      <div class="beach-note">Based on the next ${BEACH_WINDOW_H} hours of forecast wind and which way each beach faces. Wind at the water's edge can differ from the forecast.</div>
+      <div id="beach-body" style="display:${state.beachOpen ? 'block' : 'none'}">
+        <div class="beach-list">${rows}</div>
+        <div class="beach-note">Based on the next ${BEACH_WINDOW_H} hours of forecast wind and which way each beach faces. Wind at the water's edge can differ from the forecast.</div>
+      </div>
     </div>`;
+}
+
+function toggleBeach() {
+  state.beachOpen = !state.beachOpen;
+  const body = document.getElementById('beach-body');
+  const chev = document.getElementById('beach-chev');
+  if (body) body.style.display = state.beachOpen ? 'block' : 'none';
+  if (chev) chev.style.transform = state.beachOpen ? 'rotate(180deg)' : '';
 }
 
 async function findNearestStation(lat, lon) {
