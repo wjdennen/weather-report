@@ -54,18 +54,26 @@ enum BeachAdvisor {
         func signed(_ b: Beach) -> Double {
             window.map { h in h.wind * cos((h.dir - b.facing) * .pi / 180) }.reduce(0, +) / Double(window.count)
         }
-        let scored = beaches.map { (beach: $0, signed: signed($0), onshore: max(0, signed($0))) }
+        func relation(_ signed: Double) -> BeachAdvice.Relation {
+            let ratio = avgSpeed > 0 ? signed / avgSpeed : 0
+            return ratio > 0.5 ? .inFace : ratio < -0.35 ? .atBack : .fromSide
+        }
+        func rank(_ r: BeachAdvice.Relation) -> Int { r == .atBack ? 0 : r == .fromSide ? 1 : 2 }
+        let scored = beaches.enumerated().map { (i, b) -> (index: Int, beach: Beach, signed: Double, onshore: Double, rel: BeachAdvice.Relation) in
+            let s = signed(b)
+            return (i, b, s, max(0, s), relation(s))
+        }
         let minOnshore = scored.map(\.onshore).min() ?? 0
-        let best = scored.first { $0.onshore <= minOnshore + 1 } ?? scored[0]
-
-        let ratio = avgSpeed > 0 ? best.signed / avgSpeed : 0
-        let relation: BeachAdvice.Relation = ratio > 0.5 ? .inFace : ratio < -0.35 ? .atBack : .fromSide
+        // Among near-ties prefer wind at your back over from the side, then list order.
+        let best = scored.filter { $0.onshore <= minOnshore + 1 }
+            .min { (rank($0.rel), $0.index) < (rank($1.rel), $1.index) } ?? scored[0]
+        // "Also" only lists beaches with the same wind relation as the best pick, so the sentence stays true.
         let also = scored
-            .filter { $0.beach.name != best.beach.name && $0.onshore <= max(goodOnshore, minOnshore + 1) }
+            .filter { $0.index != best.index && $0.rel == best.rel && $0.onshore <= max(goodOnshore, minOnshore + 1) }
             .sorted { $0.onshore < $1.onshore }
             .prefix(3).map(\.beach)
-        return BeachAdvice(anyBeachFine: avgSpeed < lightWind, best: best.beach, relation: relation,
-                           alsoGood: Array(also), strongOffshore: relation == .atBack && avgSpeed >= 20,
+        return BeachAdvice(anyBeachFine: avgSpeed < lightWind, best: best.beach, relation: best.rel,
+                           alsoGood: Array(also), strongOffshore: best.rel == .atBack && avgSpeed >= 20,
                            avgSpeed: avgSpeed)
     }
 }

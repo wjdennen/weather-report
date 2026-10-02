@@ -937,8 +937,12 @@ function beachAdvice(w, lat, lon, startIdx) {
              rel: ratio > 0.5 ? 'face' : ratio < -0.35 ? 'back' : 'side' };
   });
   const minOnshore = Math.min(...rows.map(r => r.onshore));
-  const best = rows.find(r => r.onshore <= minOnshore + 1);
-  const also = rows.filter(r => r !== best && r.onshore <= Math.max(BEACH_GOOD_MPH, minOnshore + 1))
+  // Among near-ties prefer wind at your back over from the side, then list order.
+  const relRank = { back: 0, side: 1, face: 2 };
+  const best = rows.filter(r => r.onshore <= minOnshore + 1)
+                   .sort((a, b) => relRank[a.rel] - relRank[b.rel] || rows.indexOf(a) - rows.indexOf(b))[0];
+  // "Also" only lists beaches with the same wind relation as the best pick, so the sentence stays true.
+  const also = rows.filter(r => r !== best && r.rel === best.rel && r.onshore <= Math.max(BEACH_GOOD_MPH, minOnshore + 1))
                    .sort((a, b) => a.onshore - b.onshore).slice(0, 3);
   return {
     avgSpeed, best, also,
