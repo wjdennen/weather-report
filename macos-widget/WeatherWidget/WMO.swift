@@ -71,6 +71,12 @@ enum Wind {
         return arrows[Int((heading + 22.5) / 45) % 8]
     }
 
+    // Direction the wind is blowing FROM, as a 16-point compass name.
+    static func compass(_ dirFrom: Double) -> String {
+        let names = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+        return names[Int((dirFrom + 11.25).truncatingRemainder(dividingBy: 360) / 22.5)]
+    }
+
     static func gustColor(_ gust: Double) -> Color {
         gust >= 45 ? .red : gust >= 30 ? .orange : .white.opacity(0.85)
     }

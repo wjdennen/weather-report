@@ -73,22 +73,29 @@ func clock(_ date: Date, _ tz: TimeZone, minutes: Bool = false) -> String {
     return date.formatted(minutes ? style.hour().minute() : style.hour())
 }
 
-// Large-widget header version: bigger, stacked.
-struct TideBlock: View {
-    let tides: TideInfo
+// Large-widget header: current wind plus next high/low tide, stacked and right-aligned.
+struct HeaderStats: View {
+    let current: Forecast.Current
+    let tides: TideInfo?
     let tz: TimeZone
     var body: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            if let h = tides.nextHigh { item("High", "arrow.up", h) }
-            if let l = tides.nextLow { item("Low", "arrow.down", l) }
+        VStack(alignment: .trailing, spacing: 4) {
+            windItem
+            if let h = tides?.nextHigh { item("High \(clock(h.date, tz, minutes: true))", "arrow.up") }
+            if let l = tides?.nextLow { item("Low \(clock(l.date, tz, minutes: true))", "arrow.down") }
         }
         .padding(.trailing, 8)
     }
-    func item(_ label: String, _ icon: String, _ e: TideEvent) -> some View {
+    var windItem: some View {
+        let showGust = Wind.showsGust(wind: current.wind_speed_10m, gust: current.wind_gusts_10m)
+        let detail = "from \(Wind.compass(current.wind_direction_10m))" + (showGust ? " · g\(Int(current.wind_gusts_10m.rounded()))" : "")
+        return item("\(Wind.arrow(current.wind_direction_10m)) \(Int(current.wind_speed_10m.rounded())) mph", "wind", detail,
+                    detailColor: showGust ? Wind.gustColor(current.wind_gusts_10m) : .white.opacity(0.85))
+    }
+    func item(_ title: String, _ icon: String, _ detail: String? = nil, detailColor: Color = .white.opacity(0.85)) -> some View {
         VStack(alignment: .trailing, spacing: 0) {
-            Label("\(label) \(clock(e.date, tz, minutes: true))", systemImage: icon)
-                .font(.headline)
-            Text("\(String(format: "%.1f", e.height)) ft").font(.subheadline).opacity(0.85)
+            Label(title, systemImage: icon).font(.headline)
+            if let detail { Text(detail).font(.subheadline).foregroundStyle(detailColor) }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -108,7 +115,7 @@ struct TideLine: View {
         .minimumScaleFactor(0.8)
     }
     func item(_ label: String, _ e: TideEvent) -> some View {
-        Label("\(label) \(clock(e.date, tz, minutes: true)) · \(String(format: "%.1f", e.height)) ft",
+        Label("\(label) \(clock(e.date, tz, minutes: true))",
               systemImage: label == "High" ? "arrow.up" : "arrow.down")
             .labelStyle(.titleAndIcon)
     }
@@ -222,7 +229,7 @@ struct LargeView: View {
                     Text("\(WMO.text(c.weather_code)) · Feels \(deg(c.apparent_temperature))").font(.caption)
                 }
                 Spacer(minLength: 4)
-                if let t = d.tides { TideBlock(tides: t, tz: d.timeZone) }
+                HeaderStats(current: c, tides: d.tides, tz: d.timeZone)
                 Image(systemName: WMO.symbol(c.weather_code, isDay: c.is_day == 1))
                     .symbolRenderingMode(.multicolor).font(.system(size: 40))
             }
