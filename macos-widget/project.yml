@@ -31,7 +31,10 @@ targets:
   WeatherWidgetExtension:
     type: app-extension
     platform: macOS
-    sources: [WeatherWidget]
+    sources:
+      - WeatherWidget
+      - path: ../public/stations.json
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.widget

@@ -63,12 +63,25 @@ struct WeatherAlert {
     let severity: String
 }
 
+struct TideEvent {
+    let date: Date
+    let height: Double
+}
+
+struct TideInfo {
+    let station: String
+    let nextHigh: TideEvent?
+    let nextLow: TideEvent?
+}
+
 struct WeatherData {
     let place: Place
+    let timeZone: TimeZone
     let current: Forecast.Current
     let hours: [HourSlice]
     let days: [DaySlice]
     let alert: WeatherAlert?
+    let tides: TideInfo?
 }
 
 enum WeatherService {
@@ -78,8 +91,9 @@ enum WeatherService {
         let place = try await geocode(query)
         async let forecast = fetchForecast(place)
         async let alert = fetchAlert(place)
+        async let tides = fetchTides(place)
         let (f, tz) = try await forecast
-        return build(place: place, f: f, tz: tz, alert: await alert)
+        return build(place: place, f: f, tz: tz, alert: await alert, tides: await tides)
     }
 
     // City name via Open-Meteo, or a 5-digit US zip via Zippopotam (same sources as the web app).
@@ -160,7 +174,60 @@ enum WeatherService {
         return top.map { WeatherAlert(event: $0.properties.event, severity: $0.properties.severity ?? "") }
     }
 
-    static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?) -> WeatherData {
+    // Nearest NOAA tide station within 150 miles (list bundled from public/stations.json), as in the web app.
+    static func nearestStation(to p: Place) -> (id: String, name: String)? {
+        guard let url = Bundle.main.url(forResource: "stations", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let list = try? JSONSerialization.jsonObject(with: data) as? [[Any]] else { return nil }
+        func miles(_ lat1: Double, _ lon1: Double, _ lat2: Double, _ lon2: Double) -> Double {
+            let r = Double.pi / 180
+            let a = pow(sin((lat2 - lat1) * r / 2), 2) + cos(lat1 * r) * cos(lat2 * r) * pow(sin((lon2 - lon1) * r / 2), 2)
+            return 3958.8 * 2 * asin(min(1, sqrt(a)))
+        }
+        var best: (id: String, name: String, dist: Double)?
+        for s in list {
+            guard s.count >= 5, let id = s[0] as? String, let name = s[1] as? String,
+                  let lat = (s[3] as? NSNumber)?.doubleValue, let lon = (s[4] as? NSNumber)?.doubleValue else { continue }
+            let d = miles(p.lat, p.lon, lat, lon)
+            if d < (best?.dist ?? .infinity) { best = (id, name, d) }
+        }
+        guard let b = best, b.dist <= 150 else { return nil }
+        return (b.id, b.name)
+    }
+
+    // High/low predictions in GMT so the instants are exact regardless of station time zone.
+    static func fetchTides(_ p: Place) async -> TideInfo? {
+        guard let st = nearestStation(to: p) else { return nil }
+        let day = DateFormatter()
+        day.locale = Locale(identifier: "en_US_POSIX")
+        day.timeZone = TimeZone(identifier: "GMT")
+        day.dateFormat = "yyyyMMdd"
+        var c = URLComponents(string: "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter")!
+        c.queryItems = [
+            ("begin_date", day.string(from: Date())),
+            ("end_date", day.string(from: Date().addingTimeInterval(2 * 86400))),
+            ("station", st.id), ("product", "predictions"), ("datum", "MLLW"),
+            ("time_zone", "gmt"), ("units", "english"), ("interval", "hilo"),
+            ("application", "WeatherReportWidget"), ("format", "json"),
+        ].map { URLQueryItem(name: $0.0, value: $0.1) }
+        struct R: Decodable { struct P: Decodable { let t: String; let v: String; let type: String }; let predictions: [P]? }
+        guard let (data, _) = try? await URLSession.shared.data(from: c.url!),
+              let preds = (try? JSONDecoder().decode(R.self, from: data))?.predictions else { return nil }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(identifier: "GMT")
+        fmt.dateFormat = "yyyy-MM-dd HH:mm"
+        let now = Date()
+        let events: [(TideEvent, String)] = preds.compactMap { p in
+            guard let d = fmt.date(from: p.t), d > now, let v = Double(p.v) else { return nil }
+            return (TideEvent(date: d, height: v), p.type)
+        }
+        return TideInfo(station: st.name,
+                        nextHigh: events.first { $0.1 == "H" }?.0,
+                        nextLow: events.first { $0.1 == "L" }?.0)
+    }
+
+    static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?, tides: TideInfo?) -> WeatherData {
         let hourFmt = DateFormatter()
         hourFmt.locale = Locale(identifier: "en_US_POSIX")
         hourFmt.timeZone = tz
@@ -184,6 +251,6 @@ enum WeatherService {
             return DaySlice(id: i, date: d, code: dd.weather_code[i], hi: dd.temperature_2m_max[i],
                             lo: dd.temperature_2m_min[i], gust: dd.wind_gusts_10m_max[i])
         }
-        return WeatherData(place: place, current: f.current, hours: hours, days: days, alert: alert)
+        return WeatherData(place: place, timeZone: tz, current: f.current, hours: hours, days: days, alert: alert, tides: tides)
     }
 }

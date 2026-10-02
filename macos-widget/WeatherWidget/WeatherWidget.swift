@@ -67,6 +67,53 @@ struct WeatherWidgetView: View {
 
 func deg(_ v: Double) -> String { "\(Int(v.rounded()))°" }
 
+// Times are shown in the forecast location's time zone, not the Mac's.
+func clock(_ date: Date, _ tz: TimeZone, minutes: Bool = false) -> String {
+    let style = Date.FormatStyle(timeZone: tz)
+    return date.formatted(minutes ? style.hour().minute() : style.hour())
+}
+
+// Large-widget header version: bigger, stacked.
+struct TideBlock: View {
+    let tides: TideInfo
+    let tz: TimeZone
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            if let h = tides.nextHigh { item("High", "arrow.up", h) }
+            if let l = tides.nextLow { item("Low", "arrow.down", l) }
+        }
+        .padding(.trailing, 8)
+    }
+    func item(_ label: String, _ icon: String, _ e: TideEvent) -> some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            Label("\(label) \(clock(e.date, tz, minutes: true))", systemImage: icon)
+                .font(.headline)
+            Text("\(String(format: "%.1f", e.height)) ft").font(.subheadline).opacity(0.85)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+}
+
+struct TideLine: View {
+    let tides: TideInfo
+    let tz: TimeZone
+    var body: some View {
+        HStack(spacing: 10) {
+            if let h = tides.nextHigh { item("High", h) }
+            if let l = tides.nextLow { item("Low", l) }
+        }
+        .font(.caption2)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+    func item(_ label: String, _ e: TideEvent) -> some View {
+        Label("\(label) \(clock(e.date, tz, minutes: true)) · \(String(format: "%.1f", e.height)) ft",
+              systemImage: label == "High" ? "arrow.up" : "arrow.down")
+            .labelStyle(.titleAndIcon)
+    }
+}
+
 struct AlertBanner: View {
     let alert: WeatherAlert
     var body: some View {
@@ -119,12 +166,13 @@ struct SmallView: View {
 
 struct HourStrip: View {
     let hours: [HourSlice]
+    let tz: TimeZone
     var showPrecip: Bool { hours.contains { $0.precip >= 10 } }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(hours) { h in
                 VStack(spacing: 3) {
-                    Text(h.date.formatted(.dateTime.hour())).font(.caption2).opacity(0.8)
+                    Text(clock(h.date, tz)).font(.caption2).opacity(0.8)
                     Image(systemName: WMO.symbol(h.code)).symbolRenderingMode(.multicolor)
                     Text(deg(h.temp)).font(.caption.bold())
                     if showPrecip {
@@ -155,7 +203,8 @@ struct MediumView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let a = d.alert { AlertBanner(alert: a) }
                 Spacer(minLength: 0)
-                HourStrip(hours: Array(d.hours.prefix(5)))
+                HourStrip(hours: Array(d.hours.prefix(5)), tz: d.timeZone)
+                if let t = d.tides { TideLine(tides: t, tz: d.timeZone) }
             }
         }
     }
@@ -172,19 +221,20 @@ struct LargeView: View {
                     Text(deg(c.temperature_2m)).font(.system(size: 52, weight: .light))
                     Text("\(WMO.text(c.weather_code)) · Feels \(deg(c.apparent_temperature))").font(.caption)
                 }
-                Spacer()
+                Spacer(minLength: 4)
+                if let t = d.tides { TideBlock(tides: t, tz: d.timeZone) }
                 Image(systemName: WMO.symbol(c.weather_code, isDay: c.is_day == 1))
                     .symbolRenderingMode(.multicolor).font(.system(size: 40))
             }
             if let a = d.alert { AlertBanner(alert: a) }
-            HourStrip(hours: Array(d.hours.prefix(6)))
+            HourStrip(hours: Array(d.hours.prefix(6)), tz: d.timeZone)
             Divider().overlay(.white.opacity(0.4))
             let days = Array(d.days.prefix(5))
             let lo = days.map(\.lo).min() ?? 0
             let hi = days.map(\.hi).max() ?? 1
             ForEach(days) { day in
                 HStack(spacing: 8) {
-                    Text(day.date.formatted(.dateTime.weekday(.abbreviated))).font(.caption.bold()).frame(width: 34, alignment: .leading)
+                    Text(day.date.formatted(Date.FormatStyle(timeZone: d.timeZone).weekday(.abbreviated))).font(.caption.bold()).frame(width: 34, alignment: .leading)
                     Image(systemName: WMO.symbol(day.code)).symbolRenderingMode(.multicolor).frame(width: 24)
                     Text(deg(day.lo)).font(.caption).opacity(0.75).frame(width: 32, alignment: .trailing)
                     RangeBar(lo: day.lo, hi: day.hi, minAll: lo, maxAll: hi)
