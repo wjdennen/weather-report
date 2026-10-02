@@ -118,6 +118,19 @@ extension BeachAdvice {
     }
 }
 
+struct SunsetLine: View {
+    let sunset: SunsetQuality
+    var body: some View {
+        let pct = Int((sunset.quality * 100).rounded())
+        let strong = sunset.quality >= 0.6
+        Label("\(sunset.tonight ? "Tonight's" : "Tomorrow's") sunset: \(sunset.quality_text ?? "") · \(pct)%", systemImage: "sunset.fill")
+            .font(.caption.bold())
+            .foregroundStyle(strong ? Color.orange : Color.white.opacity(sunset.quality >= 0.3 ? 1 : 0.8))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
+}
+
 struct BeachRow: View {
     let advice: BeachAdvice
     var body: some View {
@@ -261,8 +274,9 @@ struct LargeView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Header(d: d)
-                    Text(deg(c.temperature_2m)).font(.system(size: 52, weight: .light))
+                    Text(deg(c.temperature_2m)).font(.system(size: 46, weight: .light))
                     Text("\(WMO.text(c.weather_code)) · Feels \(deg(c.apparent_temperature))").font(.caption)
+                    if let sun = d.sunset { SunsetLine(sunset: sun) }
                 }
                 Spacer(minLength: 4)
                 HeaderStats(current: c, tides: d.tides, tz: d.timeZone)

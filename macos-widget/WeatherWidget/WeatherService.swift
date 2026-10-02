@@ -31,6 +31,7 @@ struct Forecast: Decodable {
         let temperature_2m_max: [Double]
         let temperature_2m_min: [Double]
         let wind_gusts_10m_max: [Double]
+        let sunset: [String]
     }
     let utc_offset_seconds: Int
     let current: Current
@@ -74,6 +75,15 @@ struct TideInfo {
     let nextLow: TideEvent?
 }
 
+struct SunsetQuality: Decodable {
+    let quality: Double          // 0...1
+    let quality_text: String?
+    let cloud_cover: Double?
+    let direction: Double?
+    var tonight = true           // false once today's sunset has passed (tomorrow's is shown)
+    enum CodingKeys: String, CodingKey { case quality, quality_text, cloud_cover, direction }
+}
+
 struct WeatherData {
     let place: Place
     let timeZone: TimeZone
@@ -83,6 +93,7 @@ struct WeatherData {
     let alert: WeatherAlert?
     let tides: TideInfo?
     let beach: BeachAdvice?
+    let sunset: SunsetQuality?
 }
 
 enum WeatherService {
@@ -94,7 +105,8 @@ enum WeatherService {
         async let alert = fetchAlert(place)
         async let tides = fetchTides(place)
         let (f, tz) = try await forecast
-        return build(place: place, f: f, tz: tz, alert: await alert, tides: await tides)
+        let sunset = await fetchSunset(place, f, tz)
+        return build(place: place, f: f, tz: tz, alert: await alert, tides: await tides, sunset: sunset)
     }
 
     // City name via Open-Meteo, or a 5-digit US zip via Zippopotam (same sources as the web app).
@@ -147,7 +159,7 @@ enum WeatherService {
             ("longitude", String(format: "%.4f", p.lon)),
             ("current", "temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m"),
             ("hourly", "temperature_2m,weather_code,precipitation_probability,wind_speed_10m,wind_gusts_10m,wind_direction_10m"),
-            ("daily", "weather_code,temperature_2m_max,temperature_2m_min,wind_gusts_10m_max"),
+            ("daily", "weather_code,temperature_2m_max,temperature_2m_min,wind_gusts_10m_max,sunset"),
             ("temperature_unit", "fahrenheit"),
             ("wind_speed_unit", "mph"),
             ("timezone", "auto"),
@@ -173,6 +185,33 @@ enum WeatherService {
         let rank = ["Extreme": 4, "Severe": 3, "Moderate": 2, "Minor": 1]
         let top = a.features.max { rank[$0.properties.severity ?? ""] ?? 0 < rank[$1.properties.severity ?? ""] ?? 0 }
         return top.map { WeatherAlert(event: $0.properties.event, severity: $0.properties.severity ?? "") }
+    }
+
+    // Sunset quality comes from the web app's Worker proxy (worker/index.js), which holds the Sunsethue
+    // API key and caches results; the app itself carries no key. Tonight's sunset, or tomorrow's once
+    // today's has passed. Any failure just means no sunset line.
+    static let sunsetProxy = "https://weather.dennen.dev/api/sunset"
+
+    static func fetchSunset(_ p: Place, _ f: Forecast, _ tz: TimeZone) async -> SunsetQuality? {
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = tz
+        fmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        guard let first = f.daily.sunset.first, let sunsetToday = fmt.date(from: first) else { return nil }
+        let tonight = Date() <= sunsetToday
+        let idx = tonight ? 0 : 1
+        guard idx < f.daily.time.count else { return nil }
+        var c = URLComponents(string: sunsetProxy)!
+        c.queryItems = [
+            URLQueryItem(name: "lat", value: String(format: "%.2f", p.lat)),
+            URLQueryItem(name: "lon", value: String(format: "%.2f", p.lon)),
+            URLQueryItem(name: "date", value: f.daily.time[idx]),
+        ]
+        guard let (data, resp) = try? await URLSession.shared.data(from: c.url!),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              var q = try? JSONDecoder().decode(SunsetQuality.self, from: data) else { return nil }
+        q.tonight = tonight
+        return q
     }
 
     // Nearest NOAA tide station within 150 miles (list bundled from public/stations.json), as in the web app.
@@ -228,7 +267,7 @@ enum WeatherService {
                         nextLow: events.first { $0.1 == "L" }?.0)
     }
 
-    static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?, tides: TideInfo?) -> WeatherData {
+    static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?, tides: TideInfo?, sunset: SunsetQuality?) -> WeatherData {
         let hourFmt = DateFormatter()
         hourFmt.locale = Locale(identifier: "en_US_POSIX")
         hourFmt.timeZone = tz
@@ -253,6 +292,6 @@ enum WeatherService {
                             lo: dd.temperature_2m_min[i], gust: dd.wind_gusts_10m_max[i])
         }
         return WeatherData(place: place, timeZone: tz, current: f.current, hours: hours, days: days, alert: alert, tides: tides,
-                           beach: BeachAdvisor.advice(place: place, hours: hours))
+                           beach: BeachAdvisor.advice(place: place, hours: hours), sunset: sunset)
     }
 }
