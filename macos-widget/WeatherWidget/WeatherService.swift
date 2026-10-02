@@ -82,6 +82,7 @@ struct WeatherData {
     let days: [DaySlice]
     let alert: WeatherAlert?
     let tides: TideInfo?
+    let beach: BeachAdvice?
 }
 
 enum WeatherService {
@@ -251,6 +252,7 @@ enum WeatherService {
             return DaySlice(id: i, date: d, code: dd.weather_code[i], hi: dd.temperature_2m_max[i],
                             lo: dd.temperature_2m_min[i], gust: dd.wind_gusts_10m_max[i])
         }
-        return WeatherData(place: place, timeZone: tz, current: f.current, hours: hours, days: days, alert: alert, tides: tides)
+        return WeatherData(place: place, timeZone: tz, current: f.current, hours: hours, days: days, alert: alert, tides: tides,
+                           beach: BeachAdvisor.advice(place: place, hours: hours))
     }
 }

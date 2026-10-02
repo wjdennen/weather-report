@@ -102,6 +102,38 @@ struct HeaderStats: View {
     }
 }
 
+extension BeachAdvice {
+    var headline: String { anyBeachFine ? "Any beach is fine" : "Best: \(best.name)" }
+    var detail: String {
+        if anyBeachFine { return "Light wind (\(Int(avgSpeed.rounded())) mph avg)" }
+        var s: String
+        switch relation {
+        case .atBack: s = "Wind at your back"
+        case .fromSide: s = "Wind from the side"
+        case .inFace: s = "Least wind in your face"
+        }
+        if strongOffshore { s += " · strong offshore, careful with floats" }
+        else if !alsoGood.isEmpty { s += " · also " + alsoGood.map(\.name).joined(separator: ", ") }
+        return s
+    }
+}
+
+struct BeachRow: View {
+    let advice: BeachAdvice
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "beach.umbrella.fill").font(.title3)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(advice.headline).font(.subheadline.bold())
+                Text(advice.detail).font(.caption2).opacity(0.9).lineLimit(1).minimumScaleFactor(0.75)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
 struct TideLine: View {
     let tides: TideInfo
     let tz: TimeZone
@@ -205,6 +237,10 @@ struct MediumView: View {
                 Text(WMO.text(c.weather_code)).font(.caption.bold())
                 Text("Feels \(deg(c.apparent_temperature))").font(.caption2).opacity(0.85)
                 if let t = d.days.first { Text("H \(deg(t.hi))  L \(deg(t.lo))").font(.caption2).opacity(0.85) }
+                if let b = d.beach {
+                    Label(b.anyBeachFine ? "Any beach" : b.best.name, systemImage: "beach.umbrella.fill")
+                        .font(.caption2.bold()).lineLimit(1).minimumScaleFactor(0.7)
+                }
             }
             .frame(width: 110, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
@@ -235,6 +271,7 @@ struct LargeView: View {
             }
             if let a = d.alert { AlertBanner(alert: a) }
             HourStrip(hours: Array(d.hours.prefix(6)), tz: d.timeZone)
+            if let b = d.beach { BeachRow(advice: b) }
             Divider().overlay(.white.opacity(0.4))
             let days = Array(d.days.prefix(5))
             let lo = days.map(\.lo).min() ?? 0
