@@ -97,7 +97,7 @@ struct HeaderStats: View {
             Text("NEXT TIDE").font(.caption2.weight(.semibold)).opacity(0.75)
             Label("\(t.next.isHigh ? "High" : "Low") \(clock(t.next.date, tz, minutes: true))\(day)",
                   systemImage: t.next.isHigh ? "arrow.up" : "arrow.down").font(.headline)
-            Text(t.status()).font(.caption).opacity(0.9)
+            Text("Now: \(t.status())").font(.caption).opacity(0.9)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -162,7 +162,7 @@ struct TideLine: View {
     let tz: TimeZone
     var body: some View {
         let day = tides.dayMarker(tz: tz).map { " \($0)" } ?? ""
-        Label("\(tides.next.isHigh ? "High" : "Low") \(clock(tides.next.date, tz, minutes: true))\(day) · \(tides.status())",
+        Label("\(tides.next.isHigh ? "High" : "Low") \(clock(tides.next.date, tz, minutes: true))\(day) · Now: \(tides.status())",
               systemImage: tides.next.isHigh ? "arrow.up" : "arrow.down")
             .labelStyle(.titleAndIcon)
             .font(.caption2)

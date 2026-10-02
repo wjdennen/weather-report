@@ -1716,7 +1716,7 @@ function renderHome() {
           <div class="tide-now-body">
             <div class="tide-now-label">Next tide</div>
             <div class="tide-now-main">${ts.next.isHigh ? 'High' : 'Low'} ${fmt12(ts.next.d)}${nday ? ` <span class="tide-now-day">${nday}</span>` : ''}</div>
-            <div class="tide-now-status">${ts.status}</div>
+            <div class="tide-now-status">Now: ${ts.status}</div>
           </div>
         </div>`;
     }
