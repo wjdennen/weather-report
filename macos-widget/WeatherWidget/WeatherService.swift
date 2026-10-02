@@ -67,12 +67,14 @@ struct WeatherAlert {
 struct TideEvent {
     let date: Date
     let height: Double
+    let isHigh: Bool
 }
 
+// The tide event just before now (nil if the data doesn't reach back) and the next one.
 struct TideInfo {
     let station: String
-    let nextHigh: TideEvent?
-    let nextLow: TideEvent?
+    let previous: TideEvent?
+    let next: TideEvent
 }
 
 struct SunsetQuality: Decodable {
@@ -244,7 +246,7 @@ enum WeatherService {
         day.dateFormat = "yyyyMMdd"
         var c = URLComponents(string: "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter")!
         c.queryItems = [
-            ("begin_date", day.string(from: Date())),
+            ("begin_date", day.string(from: Date().addingTimeInterval(-86400))),
             ("end_date", day.string(from: Date().addingTimeInterval(2 * 86400))),
             ("station", st.id), ("product", "predictions"), ("datum", "MLLW"),
             ("time_zone", "gmt"), ("units", "english"), ("interval", "hilo"),
@@ -258,13 +260,12 @@ enum WeatherService {
         fmt.timeZone = TimeZone(identifier: "GMT")
         fmt.dateFormat = "yyyy-MM-dd HH:mm"
         let now = Date()
-        let events: [(TideEvent, String)] = preds.compactMap { p in
-            guard let d = fmt.date(from: p.t), d > now, let v = Double(p.v) else { return nil }
-            return (TideEvent(date: d, height: v), p.type)
-        }
-        return TideInfo(station: st.name,
-                        nextHigh: events.first { $0.1 == "H" }?.0,
-                        nextLow: events.first { $0.1 == "L" }?.0)
+        let events: [TideEvent] = preds.compactMap { p in
+            guard let d = fmt.date(from: p.t), let v = Double(p.v) else { return nil }
+            return TideEvent(date: d, height: v, isHigh: p.type == "H")
+        }.sorted { $0.date < $1.date }
+        guard let next = events.first(where: { $0.date > now }) else { return nil }
+        return TideInfo(station: st.name, previous: events.last { $0.date <= now }, next: next)
     }
 
     static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?, tides: TideInfo?, sunset: SunsetQuality?) -> WeatherData {

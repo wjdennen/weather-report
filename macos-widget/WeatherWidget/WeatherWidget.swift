@@ -81,8 +81,7 @@ struct HeaderStats: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             windItem
-            if let h = tides?.nextHigh { item("High \(clock(h.date, tz, minutes: true))", "arrow.up") }
-            if let l = tides?.nextLow { item("Low \(clock(l.date, tz, minutes: true))", "arrow.down") }
+            if let t = tides { nextTide(t) }
         }
         .padding(.trailing, 8)
     }
@@ -91,6 +90,17 @@ struct HeaderStats: View {
         let detail = "from \(Wind.compass(current.wind_direction_10m))" + (showGust ? " · g\(Int(current.wind_gusts_10m.rounded()))" : "")
         return item("\(Wind.arrow(current.wind_direction_10m)) \(Int(current.wind_speed_10m.rounded())) mph", "wind", detail,
                     detailColor: showGust ? Wind.gustColor(current.wind_gusts_10m) : .white.opacity(0.85))
+    }
+    func nextTide(_ t: TideInfo) -> some View {
+        let day = t.dayMarker(tz: tz).map { " \($0)" } ?? ""
+        return VStack(alignment: .trailing, spacing: 0) {
+            Text("NEXT TIDE").font(.caption2.weight(.semibold)).opacity(0.75)
+            Label("\(t.next.isHigh ? "High" : "Low") \(clock(t.next.date, tz, minutes: true))\(day)",
+                  systemImage: t.next.isHigh ? "arrow.up" : "arrow.down").font(.headline)
+            Text(t.status()).font(.caption).opacity(0.9)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
     func item(_ title: String, _ icon: String, _ detail: String? = nil, detailColor: Color = .white.opacity(0.85)) -> some View {
         VStack(alignment: .trailing, spacing: 0) {
@@ -151,18 +161,13 @@ struct TideLine: View {
     let tides: TideInfo
     let tz: TimeZone
     var body: some View {
-        HStack(spacing: 10) {
-            if let h = tides.nextHigh { item("High", h) }
-            if let l = tides.nextLow { item("Low", l) }
-        }
-        .font(.caption2)
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-    }
-    func item(_ label: String, _ e: TideEvent) -> some View {
-        Label("\(label) \(clock(e.date, tz, minutes: true))",
-              systemImage: label == "High" ? "arrow.up" : "arrow.down")
+        let day = tides.dayMarker(tz: tz).map { " \($0)" } ?? ""
+        Label("\(tides.next.isHigh ? "High" : "Low") \(clock(tides.next.date, tz, minutes: true))\(day) · \(tides.status())",
+              systemImage: tides.next.isHigh ? "arrow.up" : "arrow.down")
             .labelStyle(.titleAndIcon)
+            .font(.caption2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
     }
 }
 

@@ -423,6 +423,16 @@ html, body {
   font-size: 12px; color: var(--on-surface-variant); font-weight: 500;
 }
 
+.tide-now {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface-container); border: 1px solid var(--outline-variant);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+}
+.tide-now .tide-row-icon .msym { font-size: 30px; }
+.tide-now-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-surface-variant); }
+.tide-now-main { font-size: 22px; font-weight: 700; color: var(--on-surface); line-height: 1.2; }
+.tide-now-day { font-size: 13px; font-weight: 600; color: var(--tertiary); margin-left: 4px; }
+.tide-now-status { font-size: 13px; color: var(--primary); margin-top: 2px; }
 .tide-chart-card {
   background: var(--surface-container);
   border: 1px solid var(--outline-variant);
@@ -757,6 +767,7 @@ const state = {
   weather: null,
   tides: null,
   tideStation: null,
+  tideEvents: null,
   noaaForecast: null,
   stations: null,
   stationsLoading: false,
@@ -1066,6 +1077,41 @@ async function fetchTides(stationId, utcOffsetSeconds) {
   return { hilo, hourly };
 }
 
+// High/low events from yesterday through tomorrow, so there is always a previous and a next one.
+async function fetchTideEvents(stationId, utcOffsetSeconds) {
+  const n = wallClockNow(utcOffsetSeconds);
+  const from = dateStr(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1));
+  const to = dateStr(new Date(n.getFullYear(), n.getMonth(), n.getDate() + 2));
+  const r = await fetch(`${NOAA}?begin_date=${from}&end_date=${to}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=WeatherReport&format=json&interval=hilo`);
+  const data = await r.json();
+  return (data.predictions || [])
+    .map(p => ({ d: new Date(p.t.replace(' ', 'T')), isHigh: p.type === 'H' }))
+    .sort((a, b) => a.d - b.d);
+}
+
+// Where "now" sits in the tide cycle, in plain words. Mirrors macos-widget/WeatherWidget/TideStatus.swift.
+// Extremes are ~6 h apart: within 30 min of one it's "High/Low tide"; within 90 min after it's
+// "just past"; within 90 min before the next it's "nearly"; otherwise "mid-tide".
+function tideStatus(events, now) {
+  const next = events.find(e => e.d > now);
+  if (!next) return null;
+  const prev = [...events].reverse().find(e => e.d <= now) || null;
+  const toNext = (next.d - now) / 60000;
+  const sincePrev = prev ? (now - prev.d) / 60000 : Infinity;
+  const name = high => high ? 'high' : 'low';
+  const cap = t => t[0].toUpperCase() + t.slice(1);
+  let status;
+  if (prev && sincePrev <= 30) status = `${cap(name(prev.isHigh))} tide`;
+  else if (toNext <= 30) status = `${cap(name(next.isHigh))} tide`;
+  else {
+    const dir = next.isHigh ? 'Rising' : 'Falling';
+    if (prev && sincePrev <= 90) status = `${dir} · just past ${name(prev.isHigh)}`;
+    else if (toNext <= 90) status = `${dir} · nearly ${name(next.isHigh)}`;
+    else status = prev ? `${dir} · mid-tide` : dir;
+  }
+  return { next, status };
+}
+
 function synthesizeHourly(hilo, todayStr) {
   // Parse hilo times relative to the station's local midnight (the same calendar
   // date requested from NOAA), not the browser's midnight
@@ -1130,6 +1176,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.weather = null;
   state.tides = null;
   state.tideStation = null;
+  state.tideEvents = null;
   state.noaaForecast = null;
   state.alerts = null;
   state.sunsetQuality = null;
@@ -1178,9 +1225,13 @@ async function loadLocation(lat, lon, name, isGeo = false) {
       state.tideStation = station;
       if (state.tab === 'home') renderHome();
       try {
-        const tides = await fetchTides(station.id, weather.utc_offset_seconds);
+        const [tides, events] = await Promise.all([
+          fetchTides(station.id, weather.utc_offset_seconds),
+          fetchTideEvents(station.id, weather.utc_offset_seconds).catch(() => null),
+        ]);
         if (!stillCurrent()) return;
         state.tides = tides;
+        state.tideEvents = events;
       } catch { if (stillCurrent()) state.tides = null; }
       if (stillCurrent() && state.tab === 'home') renderHome();
     });
@@ -1653,12 +1704,29 @@ function renderHome() {
         <div class="tide-row-day">${day}</div>
       </div>`;
     }).join('');
+    let nextTideHTML = '';
+    const ts = state.tideEvents ? tideStatus(state.tideEvents, now) : null;
+    if (ts) {
+      const nd = ts.next.d.toDateString();
+      const tmr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
+      const nday = nd === now.toDateString() ? '' : nd === tmr ? 'Tomorrow' : DAYS[ts.next.d.getDay()];
+      nextTideHTML = `
+        <div class="tide-now">
+          <div class="tide-row-icon ${ts.next.isHigh ? 'high' : 'low'}">${msym(ts.next.isHigh ? 'water_drop' : 'waves')}</div>
+          <div class="tide-now-body">
+            <div class="tide-now-label">Next tide</div>
+            <div class="tide-now-main">${ts.next.isHigh ? 'High' : 'Low'} ${fmt12(ts.next.d)}${nday ? ` <span class="tide-now-day">${nday}</span>` : ''}</div>
+            <div class="tide-now-status">${ts.status}</div>
+          </div>
+        </div>`;
+    }
     tideCredit = ` · Tides by <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA CO-OPS</a>`;
     tideHTML = `
       <div class="section-heading-row">
         <div class="section-heading" style="margin:0">Tides</div>
         <div class="station-name-sm">${station.name}${station.state ? ', ' + station.state : ''} · ${station.dist}mi</div>
       </div>
+      ${nextTideHTML}
       ${chartHTML}
       <div class="tide-list">${tideRowsHTML}</div>
       <div class="tide-disclaimer">
