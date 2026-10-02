@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>13</integer>
+	<key>logs</key>
+	<dict>
+		<key>0BA8A1ED-485E-4F2E-B4E7-C398FD7C39FE</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>0BA8A1ED-485E-4F2E-B4E7-C398FD7C39FE.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>WeatherReport project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>WeatherReport</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project WeatherReport with scheme WeatherReport and configuration Release</string>
+			<key>timeStartedRecording</key>
+			<real>812639974.68440294</real>
+			<key>timeStoppedRecording</key>
+			<real>812639986.33380997</real>
+			<key>title</key>
+			<string>Building project WeatherReport with scheme WeatherReport and configuration Release</string>
+			<key>uniqueIdentifier</key>
+			<string>0BA8A1ED-485E-4F2E-B4E7-C398FD7C39FE</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

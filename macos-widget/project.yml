@@ -1,0 +1,48 @@
+name: WeatherReport
+options:
+  bundleIdPrefix: com.wjdennen
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    # Set to your Personal Team ID (Xcode > Settings > Accounts), or pick the team in the Signing tab.
+    DEVELOPMENT_TEAM: ""
+targets:
+  WeatherReport:
+    type: application
+    platform: macOS
+    sources: [WeatherReportApp]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: NO
+        INFOPLIST_KEY_CFBundleDisplayName: Weather Report
+    entitlements:
+      path: WeatherReportApp/WeatherReport.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+    dependencies:
+      - target: WeatherWidgetExtension
+  WeatherWidgetExtension:
+    type: app-extension
+    platform: macOS
+    sources: [WeatherWidget]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.widget
+    entitlements:
+      path: WeatherWidget/WeatherWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: WeatherWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Weather Report
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

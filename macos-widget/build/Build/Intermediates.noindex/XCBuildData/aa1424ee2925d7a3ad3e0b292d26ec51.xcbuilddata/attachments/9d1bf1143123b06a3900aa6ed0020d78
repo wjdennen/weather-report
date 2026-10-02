@@ -1,0 +1,26 @@
+{
+  "" : {
+    "const-values" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.swiftconstvalues",
+    "dependencies" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.d",
+    "diagnostics" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary-emit-module.dia",
+    "pch" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.swiftdeps"
+  },
+  "/Users/wjdennen/weather-report/macos-widget/WeatherWidget/WMO.swift" : {
+    "index-unit-output-path" : "/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WMO.o",
+    "llvm-bc" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WMO.bc",
+    "object" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WMO.o"
+  },
+  "/Users/wjdennen/weather-report/macos-widget/WeatherWidget/WeatherService.swift" : {
+    "index-unit-output-path" : "/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherService.o",
+    "llvm-bc" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherService.bc",
+    "object" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherService.o"
+  },
+  "/Users/wjdennen/weather-report/macos-widget/WeatherWidget/WeatherWidget.swift" : {
+    "index-unit-output-path" : "/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidget.o",
+    "llvm-bc" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidget.bc",
+    "object" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidget.o"
+  }
+}

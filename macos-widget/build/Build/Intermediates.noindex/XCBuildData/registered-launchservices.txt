@@ -1,0 +1,1 @@
+/Users/wjdennen/weather-report/macos-widget/build/Build/Products/Release/WeatherReport.app

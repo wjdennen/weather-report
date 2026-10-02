@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'WeatherReport' in project 'WeatherReport'
+➜ Explicit dependency on target 'WeatherWidgetExtension' in project 'WeatherReport'
+Target 'WeatherWidgetExtension' in project 'WeatherReport' (no dependencies)

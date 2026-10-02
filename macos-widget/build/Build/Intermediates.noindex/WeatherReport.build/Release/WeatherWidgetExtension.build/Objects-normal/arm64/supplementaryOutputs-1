@@ -1,0 +1,12 @@
+{
+  "/Users/wjdennen/weather-report/macos-widget/WeatherWidget/WMO.swift" : {
+    "abi-baseline-json" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension.abi.json",
+    "const-values" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.swiftconstvalues",
+    "dependencies" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.d",
+    "diagnostics" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-primary.dia",
+    "objc-header" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension-Swift.h",
+    "swiftdoc" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension.swiftdoc",
+    "swiftmodule" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension.swiftmodule",
+    "swiftsourceinfo" : "/Users/wjdennen/weather-report/macos-widget/build/Build/Intermediates.noindex/WeatherReport.build/Release/WeatherWidgetExtension.build/Objects-normal/arm64/WeatherWidgetExtension.swiftsourceinfo"
+  }
+}

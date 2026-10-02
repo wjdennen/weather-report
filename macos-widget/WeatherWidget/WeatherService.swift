@@ -1,0 +1,189 @@
+import Foundation
+
+struct Place {
+    let name: String
+    let lat: Double
+    let lon: Double
+}
+
+struct Forecast: Decodable {
+    struct Current: Decodable {
+        let temperature_2m: Double
+        let apparent_temperature: Double
+        let is_day: Int
+        let weather_code: Int
+        let wind_speed_10m: Double
+        let wind_direction_10m: Double
+        let wind_gusts_10m: Double
+    }
+    struct Hourly: Decodable {
+        let time: [String]
+        let temperature_2m: [Double]
+        let weather_code: [Int]
+        let precipitation_probability: [Int?]
+        let wind_speed_10m: [Double]
+        let wind_gusts_10m: [Double]
+        let wind_direction_10m: [Double]
+    }
+    struct Daily: Decodable {
+        let time: [String]
+        let weather_code: [Int]
+        let temperature_2m_max: [Double]
+        let temperature_2m_min: [Double]
+        let wind_gusts_10m_max: [Double]
+    }
+    let utc_offset_seconds: Int
+    let current: Current
+    let hourly: Hourly
+    let daily: Daily
+}
+
+struct HourSlice: Identifiable {
+    let id: Int
+    let date: Date
+    let temp: Double
+    let code: Int
+    let precip: Int
+    let wind: Double
+    let gust: Double
+    let dir: Double
+}
+
+struct DaySlice: Identifiable {
+    let id: Int
+    let date: Date
+    let code: Int
+    let hi: Double
+    let lo: Double
+    let gust: Double
+}
+
+struct WeatherAlert {
+    let event: String
+    let severity: String
+}
+
+struct WeatherData {
+    let place: Place
+    let current: Forecast.Current
+    let hours: [HourSlice]
+    let days: [DaySlice]
+    let alert: WeatherAlert?
+}
+
+enum WeatherService {
+    static let nwsHeaders = ["User-Agent": "(weather-report widget, dennen@gmail.com)", "Accept": "application/geo+json"]
+
+    static func load(query: String) async throws -> WeatherData {
+        let place = try await geocode(query)
+        async let forecast = fetchForecast(place)
+        async let alert = fetchAlert(place)
+        let (f, tz) = try await forecast
+        return build(place: place, f: f, tz: tz, alert: await alert)
+    }
+
+    // City name via Open-Meteo, or a 5-digit US zip via Zippopotam (same sources as the web app).
+    static func geocode(_ raw: String) async throws -> Place {
+        let q = raw.trimmingCharacters(in: .whitespaces)
+        if q.count == 5, q.allSatisfy(\.isNumber) {
+            struct Zip: Decodable {
+                struct P: Decodable {
+                    let latitude: String
+                    let longitude: String
+                    let state: String
+                    enum CodingKeys: String, CodingKey {
+                        case latitude, longitude, state = "state abbreviation"
+                        case name = "place name"
+                    }
+                    let name: String
+                    init(from d: Decoder) throws {
+                        let c = try d.container(keyedBy: CodingKeys.self)
+                        latitude = try c.decode(String.self, forKey: .latitude)
+                        longitude = try c.decode(String.self, forKey: .longitude)
+                        state = try c.decode(String.self, forKey: .state)
+                        name = try c.decode(String.self, forKey: .name)
+                    }
+                }
+                let places: [P]
+            }
+            let (data, _) = try await URLSession.shared.data(from: URL(string: "https://api.zippopotam.us/us/\(q)")!)
+            if let p = try JSONDecoder().decode(Zip.self, from: data).places.first,
+               let lat = Double(p.latitude), let lon = Double(p.longitude) {
+                return Place(name: "\(p.name), \(p.state)", lat: lat, lon: lon)
+            }
+        }
+        struct Geo: Decodable {
+            struct R: Decodable { let name: String; let latitude: Double; let longitude: Double; let admin1: String? }
+            let results: [R]?
+        }
+        var c = URLComponents(string: "https://geocoding-api.open-meteo.com/v1/search")!
+        c.queryItems = [.init(name: "name", value: q), .init(name: "count", value: "1")]
+        let (data, _) = try await URLSession.shared.data(from: c.url!)
+        guard let r = try JSONDecoder().decode(Geo.self, from: data).results?.first else {
+            throw URLError(.cannotFindHost)
+        }
+        return Place(name: [r.name, r.admin1].compactMap { $0 }.joined(separator: ", "), lat: r.latitude, lon: r.longitude)
+    }
+
+    static func fetchForecast(_ p: Place) async throws -> (Forecast, TimeZone) {
+        var c = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
+        c.queryItems = [
+            ("latitude", String(format: "%.4f", p.lat)),
+            ("longitude", String(format: "%.4f", p.lon)),
+            ("current", "temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m"),
+            ("hourly", "temperature_2m,weather_code,precipitation_probability,wind_speed_10m,wind_gusts_10m,wind_direction_10m"),
+            ("daily", "weather_code,temperature_2m_max,temperature_2m_min,wind_gusts_10m_max"),
+            ("temperature_unit", "fahrenheit"),
+            ("wind_speed_unit", "mph"),
+            ("timezone", "auto"),
+            ("forecast_days", "7"),
+        ].map { URLQueryItem(name: $0.0, value: $0.1) }
+        let (data, resp) = try await URLSession.shared.data(from: c.url!)
+        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+        let f = try JSONDecoder().decode(Forecast.self, from: data)
+        return (f, TimeZone(secondsFromGMT: f.utc_offset_seconds) ?? .current)
+    }
+
+    // NWS alerts are US-only; any failure just means no banner.
+    static func fetchAlert(_ p: Place) async -> WeatherAlert? {
+        guard let url = URL(string: String(format: "https://api.weather.gov/alerts/active?point=%.4f,%.4f", p.lat, p.lon)) else { return nil }
+        var req = URLRequest(url: url)
+        nwsHeaders.forEach { req.setValue($1, forHTTPHeaderField: $0) }
+        guard let (data, _) = try? await URLSession.shared.data(for: req) else { return nil }
+        struct A: Decodable {
+            struct F: Decodable { struct P: Decodable { let event: String; let severity: String? }; let properties: P }
+            let features: [F]
+        }
+        guard let a = try? JSONDecoder().decode(A.self, from: data) else { return nil }
+        let rank = ["Extreme": 4, "Severe": 3, "Moderate": 2, "Minor": 1]
+        let top = a.features.max { rank[$0.properties.severity ?? ""] ?? 0 < rank[$1.properties.severity ?? ""] ?? 0 }
+        return top.map { WeatherAlert(event: $0.properties.event, severity: $0.properties.severity ?? "") }
+    }
+
+    static func build(place: Place, f: Forecast, tz: TimeZone, alert: WeatherAlert?) -> WeatherData {
+        let hourFmt = DateFormatter()
+        hourFmt.locale = Locale(identifier: "en_US_POSIX")
+        hourFmt.timeZone = tz
+        hourFmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        let dayFmt = DateFormatter()
+        dayFmt.locale = hourFmt.locale
+        dayFmt.timeZone = tz
+        dayFmt.dateFormat = "yyyy-MM-dd"
+
+        let now = Date()
+        let h = f.hourly
+        let hours: [HourSlice] = h.time.indices.compactMap { i in
+            guard let d = hourFmt.date(from: h.time[i]), d > now.addingTimeInterval(-3600) else { return nil }
+            return HourSlice(id: i, date: d, temp: h.temperature_2m[i], code: h.weather_code[i],
+                             precip: h.precipitation_probability[i] ?? 0, wind: h.wind_speed_10m[i],
+                             gust: h.wind_gusts_10m[i], dir: h.wind_direction_10m[i])
+        }
+        let dd = f.daily
+        let days: [DaySlice] = dd.time.indices.compactMap { i in
+            guard let d = dayFmt.date(from: dd.time[i]) else { return nil }
+            return DaySlice(id: i, date: d, code: dd.weather_code[i], hi: dd.temperature_2m_max[i],
+                            lo: dd.temperature_2m_min[i], gust: dd.wind_gusts_10m_max[i])
+        }
+        return WeatherData(place: place, current: f.current, hours: hours, days: days, alert: alert)
+    }
+}
