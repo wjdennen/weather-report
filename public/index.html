@@ -1546,7 +1546,7 @@ function renderHome() {
     if (typeof sq.cloud_cover === 'number') parts.push(`Cloud cover ${round(sq.cloud_cover * 100)}%`);
     if (typeof sq.direction === 'number') parts.push(`sets toward ${deg2comp(sq.direction)}`);
     const golden = Array.isArray(sq.golden_hour) && sq.golden_hour.length === 2
-      ? `Golden hour ${fmt12(toWall(sq.golden_hour[0]))} – ${fmt12(toWall(sq.golden_hour[1]))}` : '';
+      ? `Best light ${fmt12(toWall(sq.golden_hour[0]))} – ${fmt12(toWall(sq.golden_hour[1]))}` : '';
     sunQualityHTML = `
       <div class="sun-quality">
         <div class="sun-quality-top">
