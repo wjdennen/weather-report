@@ -32,7 +32,7 @@ struct HomeView: View {
                         MoonView()
                         SectionTitle("Tides").id("tides")
                         TidesView(w: w)
-                        credits(w)
+                        credits(w).id("bottom")
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 24)
@@ -50,7 +50,7 @@ struct HomeView: View {
                 .task {
                     guard let id = ProcessInfo.processInfo.environment["SCROLL_TO"] else { return }
                     try? await Task.sleep(for: .seconds(1))
-                    proxy.scrollTo(id, anchor: .top)
+                    proxy.scrollTo(id, anchor: id == "bottom" ? .bottom : .top)
                 }
                 #endif
                 }
@@ -124,14 +124,39 @@ struct HomeView: View {
             .background(.red.opacity(0.35), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    var isLoading: Bool {
+        if case .loading = store.phase { return true }
+        return false
+    }
+
     func credits(_ w: AppWeather) -> some View {
         var s = "Weather by Open-Meteo · Forecast text and alerts by NOAA NWS"
         if w.tides != nil { s += " · Tides by NOAA CO-OPS" }
         if w.sunset != nil { s += " · Sunset forecast by Sunsethue" }
         let updated = w.fetched.formatted(Date.FormatStyle(timeZone: w.tz).hour().minute())
-        return Text("\(s)\nUpdated \(updated)")
-            .font(.caption2).foregroundStyle(.white.opacity(0.5))
-            .multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.top, 8)
+        return VStack(spacing: 10) {
+            Button {
+                // Same unstructured Task as pull-to-refresh, so SwiftUI can't cancel the requests.
+                Task { await Task { await store.refresh() }.value }
+            } label: {
+                HStack(spacing: 6) {
+                    if isLoading { ProgressView().controlSize(.small).tint(.white) }
+                    else { Image(systemName: "arrow.clockwise") }
+                    Text(isLoading ? "Updating…" : "Updated \(updated) · Refresh")
+                }
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(.white.opacity(0.1), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading)
+            .accessibilityLabel(isLoading ? "Updating weather" : "Refresh weather")
+            .accessibilityHint("Last updated at \(updated)")
+            Text(s)
+                .font(.caption2).foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity).padding(.top, 8)
     }
 }
 
