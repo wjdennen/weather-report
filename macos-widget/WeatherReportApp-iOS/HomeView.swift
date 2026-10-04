@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var expandedAlerts: Set<String> = []
     @State private var expandedDays: Set<String> = []
     let openLocations: () -> Void
+    let openWebVersion: () -> Void
 
     var body: some View {
         ZStack {
@@ -101,6 +102,9 @@ struct HomeView: View {
                 Text(message).multilineTextAlignment(.center)
                 Button("Try Again") { Task { await store.refresh() } }.buttonStyle(.borderedProminent).tint(.white.opacity(0.25))
                 Button("Search for a Location", action: openLocations).buttonStyle(.bordered).tint(.white)
+                if store.weatherRequestFailed {
+                    Button("Use Web Version", action: openWebVersion).buttonStyle(.bordered).tint(.white)
+                }
             }
             .padding(32)
         default:

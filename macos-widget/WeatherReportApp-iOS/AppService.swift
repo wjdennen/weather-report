@@ -31,6 +31,10 @@ enum AppService {
     // MARK: Open-Meteo
 
     static func fetchForecast(_ p: Place) async throws -> (FullForecast, TimeZone) {
+        #if DEBUG
+        // Screenshot/test helper: SIMCTL_CHILD_FAIL_WEATHER=1 makes the weather request fail.
+        if ProcessInfo.processInfo.environment["FAIL_WEATHER"] != nil { throw APIError(errorDescription: "forced failure") }
+        #endif
         var c = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         c.queryItems = [
             ("latitude", String(format: "%.4f", p.lat)),

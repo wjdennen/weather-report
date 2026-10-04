@@ -9,12 +9,26 @@ struct WeatherReportApp: App {
     #else
     @State private var showLocations = false
     #endif
+    #if DEBUG
+    @State private var showWebVersion = ProcessInfo.processInfo.environment["SHOW_WEB"] != nil   // screenshot helper
+    #else
+    @State private var showWebVersion = false
+    #endif
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                HomeView(openLocations: { showLocations = true })
+            Group {
+                if showWebVersion {
+                    WebFallbackView(retryNative: {
+                        showWebVersion = false
+                        Task { await store.refresh() }
+                    })
+                } else {
+                    NavigationStack {
+                        HomeView(openLocations: { showLocations = true }, openWebVersion: { showWebVersion = true })
+                    }
+                }
             }
             .environment(store)
             .tint(.white)

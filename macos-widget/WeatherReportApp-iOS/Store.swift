@@ -82,6 +82,8 @@ final class Store {
     private(set) var weather: AppWeather?
     private(set) var gpsPlace: Place?            // last resolved GPS location, shown in the list
     private(set) var title = "Weather Report"
+    // True when the weather request itself failed (not a location problem): the cue to offer the web version.
+    private(set) var weatherRequestFailed = false
 
     private let locator = LocationProvider()
     private var generation = 0                   // stale responses from a previous selection are dropped
@@ -125,6 +127,7 @@ final class Store {
         defaults.set("gps", forKey: "last_selection")
         if !keepContent { weather = nil; title = "Locating…" }
         phase = .loading
+        weatherRequestFailed = false
         do {
             let loc = try await locator.current()
             let named = await AppService.reverseGeocode(loc)
@@ -157,6 +160,7 @@ final class Store {
         if !keepContent { weather = nil }
         title = loc.displayName
         phase = .loading
+        weatherRequestFailed = false
         await fetch(loc.place, gen: gen)
     }
 
@@ -186,6 +190,7 @@ final class Store {
             let w = try await AppService.load(place)
             guard gen == generation else { return }
             weather = w
+            weatherRequestFailed = false
             phase = .loaded
             remember(w)
         } catch {
@@ -195,6 +200,7 @@ final class Store {
                 if weather != nil { phase = .loaded }
                 return
             }
+            weatherRequestFailed = true
             phase = .failed(weather == nil ? "Could not load weather. Check your connection."
                                            : "Couldn't refresh. Showing the last data.")
         }
