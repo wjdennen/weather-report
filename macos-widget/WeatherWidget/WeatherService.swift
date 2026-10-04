@@ -82,8 +82,9 @@ struct SunsetQuality: Decodable {
     let quality_text: String?
     let cloud_cover: Double?
     let direction: Double?
+    let golden_hour: [String]?   // [start, end] ISO instants of the best light (used by the app, not the widget)
     var tonight = true           // false once today's sunset has passed (tomorrow's is shown)
-    enum CodingKeys: String, CodingKey { case quality, quality_text, cloud_cover, direction }
+    enum CodingKeys: String, CodingKey { case quality, quality_text, cloud_cover, direction, golden_hour }
 }
 
 struct WeatherData {

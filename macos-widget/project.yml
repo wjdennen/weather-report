@@ -56,13 +56,24 @@ targets:
   WeatherReportiOS:
     type: application
     platform: iOS
-    sources: [WeatherReportApp-iOS]
+    sources:
+      - WeatherReportApp-iOS
+      # Weather, tide and beach logic shared with the widget (the widget's own views stay out).
+      - WeatherWidget/WeatherService.swift
+      - WeatherWidget/WMO.swift
+      - WeatherWidget/Beaches.swift
+      - WeatherWidget/TideStatus.swift
+      - path: ../public/stations.json
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.ios
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Weather Report
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_BackgroundColor: LaunchBackground
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Weather Report uses your location to show the weather where you are.
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:

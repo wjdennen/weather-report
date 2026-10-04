@@ -10,12 +10,14 @@ struct Beach {
 
 struct BeachAdvice {
     enum Relation { case atBack, fromSide, inFace }
+    struct Ranked { let beach: Beach; let relation: Relation }
     let anyBeachFine: Bool
     let best: Beach
     let relation: Relation
     let alsoGood: [Beach]
     let strongOffshore: Bool
     let avgSpeed: Double
+    let ranked: [Ranked]      // every beach, least wind in your face first (used by the iPhone app's list)
 }
 
 enum BeachAdvisor {
@@ -74,6 +76,8 @@ enum BeachAdvisor {
             .prefix(3).map(\.beach)
         return BeachAdvice(anyBeachFine: avgSpeed < lightWind, best: best.beach, relation: best.rel,
                            alsoGood: Array(also), strongOffshore: best.rel == .atBack && avgSpeed >= 20,
-                           avgSpeed: avgSpeed)
+                           avgSpeed: avgSpeed,
+                           ranked: scored.sorted { ($0.onshore, $0.index) < ($1.onshore, $1.index) }
+                               .map { BeachAdvice.Ranked(beach: $0.beach, relation: $0.rel) })
     }
 }

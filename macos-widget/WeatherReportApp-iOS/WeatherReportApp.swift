@@ -1,48 +1,34 @@
 import SwiftUI
-import WebKit
 
-// The widget extension has to ship inside an app. This app also hosts the web version
-// of Weather Report in a full-screen web view.
+// Native iPhone app. The widget extension ships inside it; both share the weather, tide and beach logic.
 @main
 struct WeatherReportApp: App {
+    @State private var store = Store()
+    #if DEBUG
+    @State private var showLocations = ProcessInfo.processInfo.environment["SHOW_LOCATIONS"] != nil   // screenshot helper
+    #else
+    @State private var showLocations = false
+    #endif
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
-            WebView(url: URL(string: "https://weather.dennen.dev")!)
-                .ignoresSafeArea() // the page pads for the notch/home indicator itself (viewport-fit=cover)
-                .background(Color(red: 0.059, green: 0.078, blue: 0.094)) // #0f1418, the page's background
-        }
-    }
-}
-
-struct WebView: UIViewRepresentable {
-    let url: URL
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeUIView(context: Context) -> WKWebView {
-        let web = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        web.navigationDelegate = context.coordinator
-        web.isOpaque = false
-        web.backgroundColor = .clear
-        web.scrollView.backgroundColor = .clear
-        web.scrollView.contentInsetAdjustmentBehavior = .never
-        web.load(URLRequest(url: url))
-        return web
-    }
-
-    func updateUIView(_ web: WKWebView, context: Context) {}
-
-    final class Coordinator: NSObject, WKNavigationDelegate {
-        // Keep the app's own site in the web view; open anything else (e.g. data-source credits) in Safari.
-        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
-                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            guard action.navigationType == .linkActivated, let target = action.request.url,
-                  target.host != webView.url?.host else {
-                decisionHandler(.allow)
-                return
+            NavigationStack {
+                HomeView(openLocations: { showLocations = true })
             }
-            UIApplication.shared.open(target)
-            decisionHandler(.cancel)
+            .environment(store)
+            .tint(.white)
+            .preferredColorScheme(.dark)    // the design is a dark, atmospheric gradient with light text
+            .sheet(isPresented: $showLocations) {
+                LocationsView().environment(store)
+            }
+            .task { await store.start() }
+            .onChange(of: scenePhase) { _, phase in
+                // Coming back after a while: refresh stale data.
+                if phase == .active, let w = store.weather, Date().timeIntervalSince(w.fetched) > 30 * 60 {
+                    Task { await store.refresh() }
+                }
+            }
         }
     }
 }

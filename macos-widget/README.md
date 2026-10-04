@@ -32,5 +32,8 @@ the phone needs Developer Mode on under Settings > Privacy & Security). Then:
 - CarPlay: iPhone Settings > General > CarPlay > your car > Customize, add Weather Report.
 
 Test without a car using the CarPlay Simulator (macOS, from "Additional Tools for Xcode") with the phone on USB.
-The iPhone app itself is a full-screen web view of https://weather.dennen.dev (location prompts use the app's location permission).
+The iPhone app is a native SwiftUI app (no radar): GPS and search, saved locations, hourly/7-day forecast, NWS text and alerts,
+conditions, beach pick, sun, moon and tides, using the same data sources as the web app. It shares the widget's
+WeatherService/WMO/Beaches/TideStatus sources. Widget and app don't share data (App Groups need a paid account),
+so set the widget's location with Edit Widget.
 The iOS targets were verified to compile for the simulator, but have not been run on a device or in CarPlay.
