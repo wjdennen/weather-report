@@ -377,5 +377,13 @@ struct WeatherWidget: Widget {
 
 @main
 struct WeatherWidgetBundle: WidgetBundle {
-    var body: some Widget { WeatherWidget() }
+    var body: some Widget {
+        WeatherWidget()
+        #if os(iOS)
+        // Lock screen widgets (see LockWidgets.swift)
+        NowLockWidget()
+        HourlyLockWidget()
+        BeachLockWidget()
+        #endif
+    }
 }

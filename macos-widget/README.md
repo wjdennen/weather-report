@@ -80,8 +80,11 @@ laid out specially for the car, and CarPlay hasn't been tested yet.
 
 ## Keeping the iPhone app installed (free Apple ID)
 
-Builds signed with a free Apple ID stop launching after 7 days. `scripts/refresh-ios.sh` rebuilds and reinstalls the
-app (with `xcodebuild -allowProvisioningUpdates` and `devicectl`), which renews the signature:
+Builds signed with a free Apple ID stop launching after 7 days, because the embedded provisioning profile expires.
+Xcode reuses a cached profile until it is nearly expired, so a plain rebuild does *not* extend the app's life.
+`scripts/refresh-ios.sh` therefore deletes cached profiles for this app that are older than `PROFILE_MAX_AGE_HOURS`
+(default 24), rebuilds (`xcodebuild -allowProvisioningUpdates`) so Xcode issues new 7-day ones, checks that the built
+app and widget actually carry them (and fails with a notification if not), then reinstalls with `devicectl`:
 
 ```
 ./scripts/refresh-ios.sh --force      # run now
@@ -103,6 +106,10 @@ launchctl bootout gui/$(id -u)/dev.dennen.weather-report-refresh      # to turn 
 
 The installed build is whatever is in the working tree at that moment. If you're away from the Wi-Fi for over a
 week, run the script by hand when you're back. A paid Apple Developer account ($99/yr) removes the limit.
+
+The macOS app and widget are different: built with your development certificate they carry no provisioning profile
+(the app only uses the sandbox and network entitlements), so the 7-day limit doesn't apply to them. The certificate
+itself lasts a year.
 
 ## Status
 
