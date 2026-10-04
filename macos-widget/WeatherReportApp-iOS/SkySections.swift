@@ -160,6 +160,7 @@ struct MoonView: View {
 
 struct TidesView: View {
     let w: AppWeather
+    @ScaledMetric(relativeTo: .headline) private var timeWidth: CGFloat = 100   // fits "10:18 PM"; scales with text size
 
     var body: some View {
         if let tides = w.tides {
@@ -240,31 +241,48 @@ struct TidesView: View {
         tides.events.filter { w.calendar.isDate($0.date, inSameDayAs: Date()) }
     }
 
+    // Upcoming tides only, through the end of tomorrow. Past ones are covered by the curve above and
+    // by the "Now: ..." status on the next-tide card.
     func list(_ tides: TideData) -> some View {
         let cal = w.calendar
-        let start = cal.startOfDay(for: Date())
-        let end = cal.date(byAdding: .day, value: 2, to: start) ?? start
-        let events = tides.events.filter { $0.date >= start && $0.date < end }
-        return VStack(spacing: 0) {
-            ForEach(Array(events.enumerated()), id: \.offset) { i, e in
-                HStack(spacing: 12) {
-                    Image(systemName: e.isHigh ? "arrow.up" : "arrow.down")
-                        .frame(width: 32, height: 32)
-                        .background((e.isHigh ? Color.cyan : Color.blue).opacity(0.25), in: Circle())
-                        .accessibilityHidden(true)
-                    Text(timeString(e.date, w.tz)).font(.headline).frame(width: 90, alignment: .leading)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("\(e.isHigh ? "High" : "Low") Tide").font(.subheadline)
-                        Text(String(format: "%.1f ft", e.height)).font(.caption).foregroundStyle(.white.opacity(0.65))
+        let now = Date()
+        let end = cal.date(byAdding: .day, value: 2, to: cal.startOfDay(for: now)) ?? now
+        let events = tides.events.filter { $0.date > now && $0.date < end }
+        return Group {
+            if !events.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(events.enumerated()), id: \.offset) { i, e in
+                        let label = dayLabel(e.date, w)
+                        // A "Today" / "Tomorrow" header whenever the day changes.
+                        if i == 0 || label != dayLabel(events[i - 1].date, w) {
+                            Text(label.uppercased()).font(.caption.weight(.semibold)).tracking(0.8)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .padding(.top, i == 0 ? 0 : 14).padding(.bottom, 4)
+                                .accessibilityAddTraits(.isHeader)
+                        } else {
+                            Divider().overlay(.white.opacity(0.12))
+                        }
+                        HStack(spacing: 12) {
+                            Image(systemName: e.isHigh ? "arrow.up" : "arrow.down")
+                                .frame(width: 32, height: 32)
+                                .background((e.isHigh ? Color.cyan : Color.blue).opacity(0.25), in: Circle())
+                                .accessibilityHidden(true)
+                            Text(timeString(e.date, w.tz)).font(.headline).lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .frame(width: timeWidth, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("\(e.isHigh ? "High" : "Low") Tide").font(.subheadline).lineLimit(1).minimumScaleFactor(0.6)
+                                Text(String(format: "%.1f ft", e.height)).font(.caption).foregroundStyle(.white.opacity(0.65))
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 8)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(label): \(e.isHigh ? "High" : "Low") tide at \(timeString(e.date, w.tz)), \(String(format: "%.1f", e.height)) feet")
                     }
-                    Spacer()
-                    Text(dayLabel(e.date, w)).font(.footnote).foregroundStyle(.white.opacity(0.65))
                 }
-                .padding(.vertical, 10)
-                .accessibilityElement(children: .combine)
-                if i < events.count - 1 { Divider().overlay(.white.opacity(0.12)) }
+                .glass()
             }
         }
-        .glass()
     }
 }
