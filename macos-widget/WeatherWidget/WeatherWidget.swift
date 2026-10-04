@@ -88,13 +88,23 @@ struct HeaderStats: View {
     var windItem: some View {
         let showGust = Wind.showsGust(wind: current.wind_speed_10m, gust: current.wind_gusts_10m)
         let detail = "from \(Wind.compass(current.wind_direction_10m))" + (showGust ? " · g\(Int(current.wind_gusts_10m.rounded()))" : "")
+        #if os(iOS)
+        // One line instead of two: the iPhone widget has less height to spare.
+        return Text("\(Wind.arrow(current.wind_direction_10m)) \(Int(current.wind_speed_10m.rounded())) mph \(detail)")
+            .font(.subheadline.bold())
+            .foregroundStyle(showGust ? Wind.gustColor(current.wind_gusts_10m) : .white)
+            .lineLimit(1).minimumScaleFactor(0.7)
+        #else
         return item("\(Wind.arrow(current.wind_direction_10m)) \(Int(current.wind_speed_10m.rounded())) mph", "wind", detail,
                     detailColor: showGust ? Wind.gustColor(current.wind_gusts_10m) : .white.opacity(0.85))
+        #endif
     }
     func nextTide(_ t: TideInfo) -> some View {
         let day = t.dayMarker(tz: tz).map { " \($0)" } ?? ""
         return VStack(alignment: .trailing, spacing: 0) {
+            #if !os(iOS)
             Text("NEXT TIDE").font(.caption2.weight(.semibold)).opacity(0.75)
+            #endif
             Label("\(t.next.isHigh ? "High" : "Low") \(clock(t.next.date, tz, minutes: true))\(day)",
                   systemImage: t.next.isHigh ? "arrow.up" : "arrow.down").font(.headline)
             Text("Now: \(t.status())").font(.caption).opacity(0.9)
@@ -224,6 +234,7 @@ struct SmallView: View {
 struct HourStrip: View {
     let hours: [HourSlice]
     let tz: TimeZone
+    var showWind = true
     var showPrecip: Bool { hours.contains { $0.precip >= 10 } }
     var body: some View {
         HStack(spacing: 0) {
@@ -235,8 +246,10 @@ struct HourStrip: View {
                     if showPrecip {
                         Text(h.precip >= 10 ? "\(h.precip)%" : " ").font(.system(size: 9)).foregroundStyle(.cyan)
                     }
-                    Text(Wind.label(wind: h.wind, gust: h.gust, dir: h.dir))
-                        .font(.system(size: 9)).foregroundStyle(Wind.gustColor(h.gust))
+                    if showWind {
+                        Text(Wind.label(wind: h.wind, gust: h.gust, dir: h.dir))
+                            .font(.system(size: 9)).foregroundStyle(Wind.gustColor(h.gust))
+                    }
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -273,26 +286,47 @@ struct MediumView: View {
 
 struct LargeView: View {
     let d: WeatherData
+    // The iPhone's large widget is shorter than the Mac's, so show fewer days and tighter spacing there.
+    // The beach row (near Aquidneck Island) takes another day's worth of height.
+    #if os(iOS)
+    var dayCount: Int { d.beach == nil ? 4 : 2 }
+    var showHourlyWind: Bool { d.beach == nil }
+    var tempSize: CGFloat { d.beach == nil ? 40 : 36 }
+    let spacing: CGFloat = 3
+    #else
+    let dayCount = 5, showHourlyWind = true, spacing: CGFloat = 5, tempSize: CGFloat = 46
+    #endif
     var body: some View {
         let c = d.current
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: spacing) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Header(d: d)
-                    Text(deg(c.temperature_2m)).font(.system(size: 46, weight: .light))
+                    Text(deg(c.temperature_2m)).font(.system(size: tempSize, weight: .light))
                     Text("\(WMO.text(c.weather_code)) · Feels \(deg(c.apparent_temperature))").font(.caption)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    #if !os(iOS)
                     if let sun = d.sunset { SunsetLine(sunset: sun) }
+                    #endif
                 }
                 Spacer(minLength: 4)
                 HeaderStats(current: c, tides: d.tides, tz: d.timeZone)
+                #if !os(iOS)
                 Image(systemName: WMO.symbol(c.weather_code, isDay: c.is_day == 1))
                     .symbolRenderingMode(.multicolor).font(.system(size: 40))
+                #endif
             }
+            #if os(iOS)
+            // The iPhone widget is narrower than the Mac one, so the sunset line gets its own full-width row.
+            if let sun = d.sunset { SunsetLine(sunset: sun) }
+            #endif
             if let a = d.alert { AlertBanner(alert: a) }
-            HourStrip(hours: Array(d.hours.prefix(6)), tz: d.timeZone)
+            HourStrip(hours: Array(d.hours.prefix(6)), tz: d.timeZone, showWind: showHourlyWind)
             if let b = d.beach { BeachRow(advice: b) }
+            #if !os(iOS)
             Divider().overlay(.white.opacity(0.4))
-            let days = Array(d.days.prefix(5))
+            #endif
+            let days = Array(d.days.prefix(dayCount))
             let lo = days.map(\.lo).min() ?? 0
             let hi = days.map(\.hi).max() ?? 1
             ForEach(days) { day in

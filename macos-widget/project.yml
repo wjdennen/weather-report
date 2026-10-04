@@ -3,14 +3,15 @@ options:
   bundleIdPrefix: com.wjdennen
   deploymentTarget:
     macOS: "14.0"
+    iOS: "17.0"
 settings:
   base:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
-    # Set to your Personal Team ID (Xcode > Settings > Accounts), or pick the team in the Signing tab.
-    DEVELOPMENT_TEAM: ""
+    # Personal Team ID (Xcode > Settings > Accounts); kept here so regenerating with xcodegen keeps signing set up.
+    DEVELOPMENT_TEAM: RRJ34KL6VE
 targets:
   WeatherReport:
     type: application
@@ -45,6 +46,41 @@ targets:
         com.apple.security.network.client: true
     info:
       path: WeatherWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Weather Report
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # iPhone app + widget (also shown in CarPlay, which renders the systemSmall family).
+  # Shares the widget sources with the macOS extension.
+  WeatherReportiOS:
+    type: application
+    platform: iOS
+    sources: [WeatherReportApp-iOS]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.ios
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Weather Report
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Weather Report uses your location to show the weather where you are.
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: WeatherWidgetExtensioniOS
+  WeatherWidgetExtensioniOS:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WeatherWidget
+        excludes: ["*.plist", "*.entitlements"]
+      - path: ../public/stations.json
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.ios.widget
+        TARGETED_DEVICE_FAMILY: "1"
+    info:
+      path: WeatherWidget-iOS/Info.plist
       properties:
         CFBundleDisplayName: Weather Report
         NSExtension:
