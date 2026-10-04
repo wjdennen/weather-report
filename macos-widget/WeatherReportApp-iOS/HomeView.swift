@@ -63,7 +63,11 @@ struct HomeView: View {
                 // in the toolbar gets underlined.
                 HStack(spacing: 8) {
                     Image(systemName: store.selection == .gps ? "location.fill" : "mappin.and.ellipse")
-                    Text(store.title).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
+                    // Fixed to the text's natural width (capped), because the iOS 26 toolbar can otherwise
+                    // collapse a non-Button item to just its icon.
+                    Text(store.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                        .frame(maxWidth: 230, alignment: .leading)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .dynamicTypeSize(...DynamicTypeSize.xLarge)   // keep the nav bar from outgrowing its space
                 .padding(.horizontal, 8)

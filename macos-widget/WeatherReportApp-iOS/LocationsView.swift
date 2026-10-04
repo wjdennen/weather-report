@@ -96,7 +96,11 @@ struct LocationsView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Current Location").font(.headline)
-                Label("GPS", systemImage: "location.fill").font(.caption.weight(.bold)).foregroundStyle(Color(red: 0.56, green: 0.84, blue: 1))
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill")
+                    Text("GPS")
+                }
+                .font(.caption.weight(.bold)).foregroundStyle(Color(red: 0.56, green: 0.84, blue: 1))
             }
             Spacer()
             if let w = store.weather, store.selection == .gps {
@@ -109,7 +113,7 @@ struct LocationsView: View {
     func savedRow(_ loc: SavedLocation) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(loc.name).font(.headline)
+                Text(loc.displayName).font(.headline)
                 if let cond = loc.condition { Text(cond).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
             }
             Spacer()

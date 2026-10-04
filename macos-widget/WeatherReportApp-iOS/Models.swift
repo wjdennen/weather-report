@@ -144,7 +144,34 @@ struct SavedLocation: Codable, Identifiable, Equatable {
     var hi: Int?
     var lo: Int?
 
-    var place: Place { Place(name: name, lat: lat, lon: lon) }
+    // "Portsmouth, RI": US states are abbreviated; elsewhere the region is shown as given. Entries saved
+    // earlier only stored the bare city name, so this is derived from `region` at display time.
+    var displayName: String {
+        if name.contains(",") || region.isEmpty { return name }
+        return "\(name), \(USState.abbreviation(for: region))"
+    }
+
+    var place: Place { Place(name: displayName, lat: lat, lon: lon) }
+}
+
+enum USState {
+    static func abbreviation(for region: String) -> String {
+        if region.count == 2 { return region }
+        return names[region] ?? region
+    }
+
+    private static let names: [String: String] = [
+        "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA", "Colorado": "CO",
+        "Connecticut": "CT", "Delaware": "DE", "District of Columbia": "DC", "Florida": "FL", "Georgia": "GA",
+        "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
+        "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA",
+        "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO", "Montana": "MT",
+        "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
+        "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
+        "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD",
+        "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+        "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY", "Puerto Rico": "PR",
+    ]
 }
 
 struct SearchResult: Identifiable {

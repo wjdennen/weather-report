@@ -147,7 +147,7 @@ final class Store {
         selection = .saved(loc.id)
         defaults.set(loc.id, forKey: "last_selection")
         if !keepContent { weather = nil }
-        title = loc.name
+        title = loc.displayName
         phase = .loading
         await fetch(loc.place, gen: gen)
     }
