@@ -135,9 +135,17 @@ final class Store {
             await fetch(place, gen: gen)
         } catch {
             guard gen == generation else { return }
-            weather = keepContent ? weather : nil
-            title = "Weather Report"
-            phase = .failed(error.localizedDescription)
+            if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                if weather != nil { phase = .loaded }
+                return
+            }
+            if keepContent && weather != nil {
+                phase = .failed("Couldn't refresh. Showing the last data.")   // keep the current title and data
+            } else {
+                weather = nil
+                title = "Weather Report"
+                phase = .failed(error.localizedDescription)
+            }
         }
     }
 
@@ -182,6 +190,11 @@ final class Store {
             remember(w)
         } catch {
             guard gen == generation else { return }
+            // A cancelled request isn't a failure; a newer request has taken over.
+            if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                if weather != nil { phase = .loaded }
+                return
+            }
             phase = .failed(weather == nil ? "Could not load weather. Check your connection."
                                            : "Couldn't refresh. Showing the last data.")
         }

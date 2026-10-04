@@ -41,7 +41,9 @@ struct HomeView: View {
                     .background(NoHorizontalPan())   // inside the scroll view, so it can find it
                 }
                 .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-                .refreshable { await store.refresh() }
+                // SwiftUI cancels a refreshable task when the refresh itself changes on-screen state, which would
+                // abort the network calls mid-flight. An unstructured Task isn't cancelled along with it.
+                .refreshable { await Task { await store.refresh() }.value }
                 #if DEBUG
                 // Screenshot helper: SIMCTL_CHILD_SCROLL_TO=<section id> jumps to that section at launch.
                 .task {
