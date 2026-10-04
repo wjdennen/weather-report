@@ -133,7 +133,9 @@ struct HomeView: View {
         var s = "Weather by Open-Meteo · Forecast text and alerts by NOAA NWS"
         if w.tides != nil { s += " · Tides by NOAA CO-OPS" }
         if w.sunset != nil { s += " · Sunset forecast by Sunsethue" }
-        let updated = w.fetched.formatted(Date.FormatStyle(timeZone: w.tz).hour().minute())
+        // When the data was fetched is a real-world moment, so show it in the phone's time zone
+        // (unlike forecast and tide times, which belong to the location's time zone).
+        let updated = w.fetched.formatted(date: .omitted, time: .shortened)
         return VStack(spacing: 10) {
             Button {
                 // Same unstructured Task as pull-to-refresh, so SwiftUI can't cancel the requests.
