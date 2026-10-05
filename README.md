@@ -5,11 +5,11 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 ## Features
 
 - **Compact hero** — condition label + icon on the left, current temperature on the right; feels-like and hi/lo below
-- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount); wind line per hour (`↓ 19 g46`) with an arrow pointing where the wind is heading, gusts shown only when 10+ mph above the steady wind, amber at 30+ mph and red at 45+
+- **Hourly scroll** — 24-hour horizontal chip strip with animated TODAY/TOMORROW/day-name label; precip probability shown as a fill bar (width = probability, color intensity = expected amount) plus a percentage label when above 0%; wind line per hour (`↓ 19 g46`) with an arrow pointing where the wind is heading, gusts shown only when 10+ mph above the steady wind, amber at 30+ mph and red at 45+
 - **Weather alerts** — active NWS warnings/watches/advisories shown as color-coded banners (red=warning, orange=watch, yellow=advisory) with the time the hazard ends (NWS `ends`, not the message `expires`); tap to expand full NWS alert text; US locations only, silently absent elsewhere
-- **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise)
+- **NWS detailed forecast** — paragraph-form text forecast from NOAA NWS for the current period (US locations only; silently skipped otherwise, but a failed fetch is retried and shown as a retry row, see 7-day forecast)
 - **Conditions grid** — wind, humidity, UV index, visibility
-- **7-day forecast** — condition icons, temperature range bars, NWS condition label, max wind/gust with dominant direction (same gust colors as hourly), expandable NWS detail per day
+- **7-day forecast** — condition icons, temperature range bars, NWS condition label, max wind/gust with dominant direction (same gust colors as hourly), expandable NWS detail per day; NWS calls retry transient failures (network error, 429, 5xx) up to 3 times, and if they still fail the list ends with a "Detailed forecast unavailable. Tap to retry." row instead of silently losing the expand chevrons
 - **Radar** — animated tile-based radar map centered on user location; ESRI World Dark Gray base map (zoom 8) with RainViewer radar overlay (zoom 6, last ~60 min, 6 frames); works globally
 - **Moon phase** — phase name, illumination %, and day in lunar cycle; calculated locally with no API call; new moon shown as an outlined circle (visible on dark background)
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc; tonight's (or tomorrow's) sunset quality rating, cloud cover and best-light window from Sunsethue, shown only when the Worker proxy is configured

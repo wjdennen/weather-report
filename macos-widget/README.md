@@ -60,7 +60,7 @@ Right-click the widget > Edit Widget to set the city or zip (default: New York).
 
 The app is a native SwiftUI app (no radar): GPS or searched locations (city or US zip), saved locations,
 pull to refresh, the NWS alert banners, hero, 24-hour strip, NWS text forecast, conditions, beach pick,
-7-day forecast with expandable NWS detail, sun (with sunset quality), moon and tides (next tide, curve,
+7-day forecast with expandable NWS detail (NWS fetches retry on transient failures, with a tap-to-retry row if they still fail), sun (with sunset quality), moon and tides (next tide, curve,
 upcoming list). It uses the web app's dark atmospheric backgrounds and is always dark.
 Accessibility: VoiceOver labels, Dynamic Type layouts, Reduce Motion support.
 
