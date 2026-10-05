@@ -119,6 +119,7 @@ struct AppWeather {
     let days: [DayRow]
     let alerts: [NWSAlert]
     let periods: [NWSPeriod]
+    let periodsFailed: Bool   // NWS detail text couldn't be fetched (not just unavailable for this place)
     let tides: TideData?
     let sunset: SunsetQuality?
     let beach: BeachAdvice?

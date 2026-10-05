@@ -12,12 +12,14 @@ enum AppService {
 
     static func load(_ place: Place) async throws -> AppWeather {
         async let forecast = fetchForecast(place)
-        async let periods = fetchNWSPeriods(place)
+        async let nws = fetchNWSPeriods(place)
         async let alerts = fetchAlerts(place)
         async let tides = fetchTides(place)
         let (f, tz) = try await forecast
         let sunset = await fetchSunset(place, f, tz)
-        return build(place: place, f: f, tz: tz, periods: await periods, alerts: await alerts, tides: await tides, sunset: sunset)
+        let (periods, periodsFailed) = await nws
+        return build(place: place, f: f, tz: tz, periods: periods, periodsFailed: periodsFailed,
+                     alerts: await alerts, tides: await tides, sunset: sunset)
     }
 
     static func timeParser(_ tz: TimeZone, _ format: String) -> DateFormatter {
@@ -69,15 +71,43 @@ enum AppService {
         return f
     }()
 
-    static func fetchNWSPeriods(_ p: Place) async -> [NWSPeriod] {
-        guard let pointsURL = URL(string: String(format: "https://api.weather.gov/points/%.4f,%.4f", p.lat, p.lon)),
-              let (pd, pr) = try? await URLSession.shared.data(for: nwsRequest(pointsURL)),
-              (pr as? HTTPURLResponse)?.statusCode == 200 else { return [] }
+    enum NWSFetch { case ok(Data), unavailable, failed }
+
+    // api.weather.gov is flaky: retry transient failures (network error, 429, 5xx) a couple of times.
+    // Any other status (e.g. 404 outside the US) is final and means "no data", not "failed".
+    static func nwsFetch(_ url: URL) async -> NWSFetch {
+        for attempt in 0..<3 {
+            if attempt > 0 {
+                try? await Task.sleep(for: .milliseconds(700 * attempt))
+                if Task.isCancelled { return .failed }
+            }
+            guard let (data, resp) = try? await URLSession.shared.data(for: nwsRequest(url)),
+                  let code = (resp as? HTTPURLResponse)?.statusCode else { continue }
+            if code == 200 { return .ok(data) }
+            if code == 429 || code >= 500 { continue }
+            return .unavailable
+        }
+        return .failed
+    }
+
+    // `failed` is true only when NWS should have had a forecast but we couldn't get one, so the UI can offer a retry.
+    static func fetchNWSPeriods(_ p: Place) async -> (periods: [NWSPeriod], failed: Bool) {
+        guard let pointsURL = URL(string: String(format: "https://api.weather.gov/points/%.4f,%.4f", p.lat, p.lon)) else { return ([], false) }
+        let pd: Data
+        switch await nwsFetch(pointsURL) {
+        case .ok(let d): pd = d
+        case .unavailable: return ([], false)
+        case .failed: return ([], true)
+        }
         struct Points: Decodable { struct P: Decodable { let forecast: String? }; let properties: P }
         guard let urlString = (try? JSONDecoder().decode(Points.self, from: pd))?.properties.forecast,
-              let url = URL(string: urlString),
-              let (fd, fr) = try? await URLSession.shared.data(for: nwsRequest(url)),
-              (fr as? HTTPURLResponse)?.statusCode == 200 else { return [] }
+              let url = URL(string: urlString) else { return ([], false) }
+        let fd: Data
+        switch await nwsFetch(url) {
+        case .ok(let d): fd = d
+        case .unavailable: return ([], false)
+        case .failed: return ([], true)
+        }
         struct FC: Decodable {
             struct P: Decodable {
                 let name: String
@@ -90,12 +120,13 @@ enum AppService {
             struct Props: Decodable { let periods: [P] }
             let properties: Props
         }
-        guard let fc = try? JSONDecoder().decode(FC.self, from: fd) else { return [] }
-        return fc.properties.periods.compactMap { p in
+        guard let fc = try? JSONDecoder().decode(FC.self, from: fd) else { return ([], true) }
+        let periods: [NWSPeriod] = fc.properties.periods.compactMap { p in
             guard let s = isoDate.date(from: p.startTime), let e = isoDate.date(from: p.endTime) else { return nil }
             return NWSPeriod(name: p.name, start: s, end: e, isDaytime: p.isDaytime,
                              shortForecast: p.shortForecast, detailedForecast: p.detailedForecast)
         }
+        return (periods, false)
     }
 
     static func fetchAlerts(_ p: Place) async -> [NWSAlert] {
@@ -175,7 +206,7 @@ enum AppService {
 
     // MARK: Build
 
-    static func build(place: Place, f: FullForecast, tz: TimeZone, periods: [NWSPeriod],
+    static func build(place: Place, f: FullForecast, tz: TimeZone, periods: [NWSPeriod], periodsFailed: Bool,
                       alerts: [NWSAlert], tides: TideData?, sunset: SunsetQuality?) -> AppWeather {
         let minuteFmt = timeParser(tz, "yyyy-MM-dd'T'HH:mm")
         let dayFmt = timeParser(tz, "yyyy-MM-dd")
@@ -218,7 +249,7 @@ enum AppService {
                                                wind: $0.wind, gust: $0.gust, dir: $0.dir) }
         return AppWeather(place: place, tz: tz, fetched: now, current: current, hours: chips, days: days,
                           alerts: alerts.sorted { severityRank($0.severity) > severityRank($1.severity) },
-                          periods: periods, tides: tides, sunset: sunset,
+                          periods: periods, periodsFailed: periodsFailed, tides: tides, sunset: sunset,
                           beach: BeachAdvisor.advice(place: place, hours: beachHours))
     }
 

@@ -289,6 +289,7 @@ struct BeachView: View {
 struct ForecastView: View {
     let w: AppWeather
     @Binding var expanded: Set<String>
+    @Environment(Store.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -330,6 +331,18 @@ struct ForecastView: View {
                     }
                     if i < days.count - 1 { Divider().overlay(.white.opacity(0.12)) }
                 }
+            }
+            if w.periodsFailed {
+                Divider().overlay(.white.opacity(0.12))
+                Button {
+                    Task { await store.refresh() }
+                } label: {
+                    Label("Detailed forecast unavailable. Tap to retry.", systemImage: "arrow.clockwise")
+                        .font(.footnote)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
             }
         }
         .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))

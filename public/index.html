@@ -348,6 +348,8 @@ html, body {
 .temp-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; }
 .temp-bar-fill { position: absolute; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #8ed5ff, #ffc176); }
 .temp-hi { font-size: 13px; font-weight: 600; color: var(--on-surface); width: 28px; }
+.forecast-retry { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px 16px; background: none; border: none; border-top: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: inherit; font-size: 13px; cursor: pointer; }
+.forecast-retry .msym { font-size: 16px; }
 .forecast-expand { width: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .forecast-expand .msym { font-size: 18px; color: var(--outline); transition: transform 0.2s; }
 
@@ -786,6 +788,7 @@ const state = {
   tideStation: null,
   tideEvents: null,
   noaaForecast: null,
+  noaaFailed: false,
   stations: null,
   stationsLoading: false,
   managing: false,
@@ -1046,20 +1049,57 @@ async function findNearestStation(lat, lon) {
   return bestDist <= 150 ? { id: best[0], name: best[1], state: best[2], lat: best[3], lon: best[4], dist: Math.round(bestDist) } : null;
 }
 
+// api.weather.gov is flaky: retry transient failures (network error, 429, 5xx) a couple of times.
+// Resolves to the parsed JSON, null for a final non-OK status (e.g. 404 outside the US),
+// or undefined when every attempt failed.
+async function fetchNWSJSON(url, headers) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(res => setTimeout(res, 700 * attempt));
+    try {
+      const r = await fetch(url, { headers });
+      if (r.ok) return await r.json();
+      if (r.status !== 429 && r.status < 500) return null;
+    } catch { /* network error or bad JSON: retry */ }
+  }
+  return undefined;
+}
+
+// Resolves to { periods, radarStation }, null when NWS has no forecast for this place (outside US),
+// or { failed: true } when it should have but couldn't be fetched.
 async function fetchNWSForecast(lat, lon) {
-  try {
-    const nwsHeaders = { 'User-Agent': '(weather-report, dennen@gmail.com)' };
-    const r = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, { headers: nwsHeaders });
-    if (!r.ok) return null; // 404 = outside US, or grid unavailable
-    const pts = await r.json();
-    const url = pts.properties?.forecast;
-    const radarStation = pts.properties?.radarStation || null;
-    if (!url) return null;
-    const r2 = await fetch(url, { headers: nwsHeaders });
-    if (!r2.ok) return null;
-    const fc = await r2.json();
-    return { periods: fc.properties?.periods || null, radarStation };
-  } catch { return null; }
+  const nwsHeaders = { 'User-Agent': '(weather-report, dennen@gmail.com)' };
+  const pts = await fetchNWSJSON(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, nwsHeaders);
+  if (pts === undefined) return { failed: true };
+  const url = pts?.properties?.forecast;
+  if (!url) return null; // 404 = outside US, or grid unavailable
+  const radarStation = pts.properties.radarStation || null;
+  const fc = await fetchNWSJSON(url, nwsHeaders);
+  if (fc === undefined) return { failed: true };
+  if (!fc) return null;
+  return { periods: fc.properties?.periods || null, radarStation };
+}
+
+function loadNWSForecast(lat, lon, stillCurrent) {
+  return fetchNWSForecast(lat, lon).then(result => {
+    if (!stillCurrent()) return;
+    if (result?.failed) {
+      state.noaaFailed = true;
+    } else if (result) {
+      state.noaaFailed = false;
+      state.noaaForecast = result.periods;
+      state.radarStation = result.radarStation;
+    }
+    if (state.tab === 'home') renderHome();
+  });
+}
+
+function retryNWSForecast() {
+  const { lat, lon } = state;
+  if (lat == null) return;
+  state.noaaFailed = false;
+  renderHome();
+  const gen = state.loadGen;
+  loadNWSForecast(lat, lon, () => state.loadGen === gen);
 }
 
 async function fetchAlerts(lat, lon) {
@@ -1196,6 +1236,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.tideStation = null;
   state.tideEvents = null;
   state.noaaForecast = null;
+  state.noaaFailed = false;
   state.alerts = null;
   state.sunsetQuality = null;
 
@@ -1222,14 +1263,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     });
 
     // NWS detailed forecast + alerts in background (US only; silently skipped outside US)
-    fetchNWSForecast(lat, lon).then(result => {
-      if (!stillCurrent()) return;
-      if (result) {
-        state.noaaForecast = result.periods;
-        state.radarStation = result.radarStation;
-        if (state.tab === 'home') renderHome();
-      }
-    });
+    loadNWSForecast(lat, lon, stillCurrent);
     fetchAlerts(lat, lon).then(alerts => {
       if (!stillCurrent()) return;
       state.alerts = alerts;
@@ -1983,6 +2017,9 @@ function buildForecastRows() {
       </div>
       ${hasDetail ? `<div class="forecast-detail" id="forecast-body-${fkey}" style="display:${isOpen ? 'block' : 'none'}">${detailInner}</div>` : ''}
     </div>`;
+  }
+  if (state.noaaFailed) {
+    rowsHTML += `<button type="button" class="forecast-retry" onclick="retryNWSForecast()"><span class="msym" aria-hidden="true">refresh</span>Detailed forecast unavailable. Tap to retry.</button>`;
   }
   return `<div class="forecast-list">${rowsHTML}</div>`;
 }
