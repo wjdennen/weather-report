@@ -1113,23 +1113,27 @@ async function fetchAlerts(lat, lon) {
 }
 
 async function fetchTides(stationId, utcOffsetSeconds) {
-  const today = dateStr(wallClockNow(utcOffsetSeconds));
+  const n = wallClockNow(utcOffsetSeconds);
+  const today = dateStr(n);
+  const tomorrow = dateStr(new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1));
   const base = `${NOAA}?begin_date=${today}&end_date=${today}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=WeatherReport&format=json`;
 
+  // The list shows upcoming tides only, so fetch through tomorrow; the curve stays today-only.
   const [hiloRes, hourlyRes] = await Promise.all([
-    fetch(`${base}&interval=hilo`),
+    fetch(`${base.replace(`end_date=${today}`, `end_date=${tomorrow}`)}&interval=hilo`),
     fetch(`${base}&interval=h`),
   ]);
   const hiloData = await hiloRes.json();
   const hourlyData = await hourlyRes.json();
 
   const hilo = hiloData.predictions || [];
+  const todayHilo = hilo.filter(p => p.t.startsWith(dateStr(n, '-')));
   let hourly = hourlyData.predictions || [];
 
   // If this station only has hilo predictions, synthesize hourly heights
   // using sinusoidal interpolation between consecutive high/low events
-  if (!hourly.length && hilo.length >= 2) {
-    hourly = synthesizeHourly(hilo, today);
+  if (!hourly.length && todayHilo.length >= 2) {
+    hourly = synthesizeHourly(todayHilo, today);
   }
 
   return { hilo, hourly };
@@ -1743,7 +1747,9 @@ function renderHome() {
         <div class="card-label">Today's Tide Curve</div>
         <div class="tide-chart-wrap">${tideChartSVG(hourly, now)}</div>
       </div>` : '';
-    const sortedTides = [...hilo].sort((a, b) => a.t < b.t ? -1 : 1);
+    // Upcoming only; past ones are covered by the curve and the "Now:" status above.
+    const nowStr = `${dateStr(now, '-')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const sortedTides = hilo.filter(t => t.t > nowStr).sort((a, b) => a.t < b.t ? -1 : 1);
     const tideRowsHTML = sortedTides.map(tide => {
       const isHigh = tide.type === 'H';
       const d = new Date(tide.t.replace(' ', 'T'));
