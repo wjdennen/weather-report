@@ -4,7 +4,7 @@ Status: **built** for the web app and the iPhone app. Not in the iOS or macOS wi
 
 ## What it does
 
-Within 20 miles of Newport (`CRUISE_PORT` / `CRUISE_MAX_MI` in `public/index.html`), the Home screen gets a "Cruise Ships" card after Tides: today plus the next four days, grouped by day. Ships calling today get an "In port today" tag; cancelled calls are struck through and labelled. Each row shows the cruise line, and tapping expands it to passenger capacity (double occupancy) and the ports of call on that cruise with Newport highlighted. Newport arrival/departure times appear on the row where known. No card outside the radius, when nothing is scheduled in the window, or if the file fails to load.
+Within 20 miles of Newport (`CRUISE_PORT` / `CRUISE_MAX_MI` in `public/index.html`), the Home screen gets a "Cruise Ships" card after Tides: today plus the next four days, grouped by day. Ships calling today get an "In port today" tag; cancelled calls are struck through and labelled. Each row shows the cruise line, and tapping expands it to passenger capacity and the ports of call on that cruise with Newport highlighted. Newport arrival/departure times appear on the row where known. No card outside the radius, when nothing is scheduled in the window, or if the file fails to load.
 
 ## Data
 

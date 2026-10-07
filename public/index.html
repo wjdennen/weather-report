@@ -1624,7 +1624,7 @@ const cruiseThousands = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 function cruiseDetailHTML(c, ship, id) {
   let html = '';
-  if (ship?.passengers) html += `<div class="cruise-fact">Up to ${cruiseThousands(ship.passengers)} passengers (double occupancy)</div>`;
+  if (ship?.passengers) html += `<div class="cruise-fact">Up to ${cruiseThousands(ship.passengers)} passengers</div>`;
   if (c.itinerary?.length) {
     html += '<div class="cruise-itin-title">Ports of call on this cruise</div>' + c.itinerary.map(st => {
       const here = st.port.startsWith('Newport');

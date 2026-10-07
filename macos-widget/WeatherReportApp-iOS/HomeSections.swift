@@ -515,7 +515,7 @@ struct CruiseView: View {
     func detail(_ call: CruiseCall, _ ship: CruiseShip?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             if let ship {
-                Text("Up to \(ship.passengers.formatted()) passengers (double occupancy)")
+                Text("Up to \(ship.passengers.formatted()) passengers")
                     .font(.subheadline).foregroundStyle(.white.opacity(0.85))
             }
             if let stops = call.itinerary, !stops.isEmpty {
