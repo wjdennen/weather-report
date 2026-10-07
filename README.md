@@ -152,6 +152,8 @@ Commit and push — no cache bump needed.
 
 If it reports a change, open the PDF it prints, update `calls` (one `{date, ship}` per row, add `"cancelled": true` for struck-through rows — the strikethrough isn't in the PDF's text layer, so check the rendered page), and set `pdfUrl` and `updated`. Commit and push — no cache bump needed. The PDF has no times and doesn't cover the South Alofsin Pier at Fort Adams (small ships such as American Cruise Lines); the card's footnote says so.
 
+CruiseMapper has arrival/departure times and cruise lines for Newport, but its terms prohibit scraping without written consent. Permission was requested on 2026-10-07; until they agree in writing, the app doesn't use their data. Background and the offered usage limits are in [`docs/cruise-ships-spec.md`](docs/cruise-ships-spec.md). The cruise card is web-only for now (not in the iPhone app or macOS widget).
+
 ## Project structure
 
 ```
@@ -174,6 +176,8 @@ scripts/
   refresh-stations.sh   Re-downloads stations.json from NOAA
   check-cruise.sh       Reports whether Discover Newport has published a newer cruise schedule PDF
   refresh-ios.sh        Rebuilds and reinstalls the iPhone app (beats the 7-day free-signing expiry)
+docs/
+  cruise-ships-spec.md  Design notes for the Newport cruise card, data-source comparison, CruiseMapper permission status
 build.sh                Stamps build timestamp + SW cache version before deploy
 wrangler.toml           Cloudflare config (assets directory ./public; Worker runs for /api/*)
 ```

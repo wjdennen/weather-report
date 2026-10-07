@@ -16,6 +16,19 @@ Within 20 miles of Newport (`CRUISE_PORT` / `CRUISE_MAX_MI` in `public/index.htm
 
 CruiseMapper has better data (arrival/departure times, cruise lines) but its Terms of Use (section 4) prohibit scraping and automated collection without written consent. A working Worker scraper was built and tested, then removed. If CruiseMapper grants permission, times could be added; draft request in the project history/chat.
 
+## Permission request to CruiseMapper
+
+Bill emailed CruiseMapper (2026-10-07) asking for written consent under Section 4 of their terms. No reply yet; the app does not use CruiseMapper data. What the sent email offered, which is the scope any approval would cover:
+
+- Fetch only the Newport page, plus the next month's page when the date range crosses a month boundary.
+- Cache for **at least 24 hours**.
+- Identify requests as `weather-report/1.0 (+https://github.com/wjdennen)`.
+- Show only ship name, cruise line and arrival/departure times for the next five days.
+- Credit CruiseMapper.com with a visible link back; stop immediately on request.
+- Disclosed: hobby project, no ads/accounts/revenue, used by Bill and his wife, shared with a few friends.
+
+If they say yes, the removed Worker scraper design (edge cache, stale fallback, per-month fetch) can be rebuilt with these limits. Note the email describes the card generically with Newport only as the example, and says "that one page", so confirm with them before adding any other port.
+
 ## Known limits
 
 - Dates and ship names only: no times, cruise lines or passenger counts.
