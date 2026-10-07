@@ -419,6 +419,9 @@ struct CruiseView: View {
     let w: AppWeather
     @State private var open: Set<String> = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .footnote) private var dateWidth: CGFloat = 54   // fits "Oct 17" at any text size
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var stacked: Bool { typeSize >= .xxLarge }
 
     var body: some View {
         let days = w.cruiseDays
@@ -448,28 +451,21 @@ struct CruiseView: View {
                 guard hasDetail else { return }
                 if reduceMotion { toggle(call.id) } else { withAnimation(.easeInOut(duration: 0.2)) { toggle(call.id) } }
             } label: {
-                HStack(spacing: 12) {
+                HStack(alignment: stacked ? .top : .center, spacing: 12) {
                     Image(systemName: "ferry.fill")
                         .foregroundStyle(cancelled ? .white.opacity(0.4) : Color(red: 0.56, green: 0.84, blue: 1))
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(call.ship).font(.headline)
-                            .strikethrough(cancelled)
-                            .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
-                        if let line = ship?.line { Text(line).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
-                    }
-                    Spacer(minLength: 8)
-                    VStack(alignment: .trailing, spacing: 2) {
-                        if cancelled {
-                            Text("Cancelled").font(.footnote).foregroundStyle(.white.opacity(0.55))
-                        } else {
-                            if isToday {
-                                Text("IN PORT TODAY").font(.caption2.weight(.bold)).tracking(0.6)
-                                    .padding(.horizontal, 8).padding(.vertical, 3)
-                                    .background(Color(red: 0.56, green: 0.84, blue: 1).opacity(0.25), in: Capsule())
-                            }
-                            if let t = times(call) { Text(t).font(.footnote.weight(.semibold)).foregroundStyle(Color(red: 0.56, green: 0.84, blue: 1)) }
+                    if stacked {
+                        // Large text: the status goes under the name instead of squeezing it into a sliver.
+                        VStack(alignment: .leading, spacing: 4) {
+                            nameBlock(call, ship, cancelled)
+                            status(call, cancelled: cancelled, isToday: isToday, alignment: .leading)
                         }
+                        Spacer(minLength: 0)
+                    } else {
+                        nameBlock(call, ship, cancelled)
+                        Spacer(minLength: 8)
+                        status(call, cancelled: cancelled, isToday: isToday, alignment: .trailing)
                     }
                     if hasDetail {
                         Image(systemName: "chevron.down").font(.footnote).foregroundStyle(.white.opacity(0.7))
@@ -488,6 +484,34 @@ struct CruiseView: View {
         .padding(.vertical, 5)
     }
 
+    func nameBlock(_ call: CruiseCall, _ ship: CruiseShip?, _ cancelled: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(call.ship).font(.headline)
+                .strikethrough(cancelled)
+                .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
+            if let line = ship?.line { Text(line).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder func status(_ call: CruiseCall, cancelled: Bool, isToday: Bool, alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 2) {
+            if cancelled {
+                Text("Cancelled").font(.footnote).foregroundStyle(.white.opacity(0.55))
+            } else {
+                if isToday {
+                    Text("IN PORT TODAY").font(.caption2.weight(.bold)).tracking(0.6)
+                        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Color(red: 0.56, green: 0.84, blue: 1).opacity(0.25), in: Capsule())
+                }
+                if let t = times(call) {
+                    Text(t).font(.footnote.weight(.semibold)).foregroundStyle(Color(red: 0.56, green: 0.84, blue: 1))
+                }
+            }
+        }
+    }
+
     func detail(_ call: CruiseCall, _ ship: CruiseShip?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             if let ship {
@@ -502,12 +526,17 @@ struct CruiseView: View {
                         Text(stop.date.map(CruiseSchedules.shortDate) ?? "")
                             .font(.footnote).monospacedDigit()
                             .foregroundStyle(stop.isNewport ? Color(red: 1, green: 0.76, blue: 0.46) : .white.opacity(0.5))
-                            .frame(width: 54, alignment: .leading)
+                            .lineLimit(1)
+                            .frame(width: dateWidth, alignment: .leading)
                         Text(stop.port).font(.subheadline.weight(stop.isNewport ? .bold : .regular))
                             .foregroundStyle(stop.isNewport ? .white : .white.opacity(0.8))
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("\(stop.date.map(CruiseSchedules.shortDate).map { $0 + ", " } ?? "")\(stop.port)\(stop.isNewport ? ", this stop" : "")")
+                }
+                if stops.contains(where: { $0.date == nil }) {
+                    Text("Ports are in order; dates shown where known.").font(.caption)
+                        .foregroundStyle(.white.opacity(0.55)).padding(.top, 2)
                 }
             }
         }

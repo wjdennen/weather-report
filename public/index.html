@@ -1630,6 +1630,7 @@ function cruiseDetailHTML(c, ship, id) {
       const here = st.port.startsWith('Newport');
       return `<div class="cruise-stop${here ? ' here' : ''}"><span class="cruise-stop-date">${st.date ? cruiseShortDate(st.date) : ''}</span><span>${escHtml(st.port)}</span></div>`;
     }).join('');
+    if (c.itinerary.some(st => !st.date)) html += '<div class="cruise-fact" style="font-size:11px;margin:4px 0 0;opacity:0.8">Ports are in order; dates shown where known.</div>';
   }
   return html;
 }
