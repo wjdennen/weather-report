@@ -15,11 +15,16 @@ enum AppService {
         async let nws = fetchNWSPeriods(place)
         async let alerts = fetchAlerts(place)
         async let tides = fetchTides(place)
+        async let cruise = fetchCruise(place)
         let (f, tz) = try await forecast
         let sunset = await fetchSunset(place, f, tz)
         let (periods, periodsFailed) = await nws
         return build(place: place, f: f, tz: tz, periods: periods, periodsFailed: periodsFailed,
-                     alerts: await alerts, tides: await tides, sunset: sunset)
+                     alerts: await alerts, tides: await tides, sunset: sunset, cruise: await cruise)
+    }
+
+    static func fetchCruise(_ place: Place) async -> CruiseSchedule? {
+        CruiseSchedules.isNearPort(place) ? await CruiseSchedules.load() : nil
     }
 
     static func timeParser(_ tz: TimeZone, _ format: String) -> DateFormatter {
@@ -207,7 +212,8 @@ enum AppService {
     // MARK: Build
 
     static func build(place: Place, f: FullForecast, tz: TimeZone, periods: [NWSPeriod], periodsFailed: Bool,
-                      alerts: [NWSAlert], tides: TideData?, sunset: SunsetQuality?) -> AppWeather {
+                      alerts: [NWSAlert], tides: TideData?, sunset: SunsetQuality?,
+                      cruise: CruiseSchedule?) -> AppWeather {
         let minuteFmt = timeParser(tz, "yyyy-MM-dd'T'HH:mm")
         let dayFmt = timeParser(tz, "yyyy-MM-dd")
         let now = Date()
@@ -250,7 +256,7 @@ enum AppService {
         return AppWeather(place: place, tz: tz, fetched: now, current: current, hours: chips, days: days,
                           alerts: alerts.sorted { severityRank($0.severity) > severityRank($1.severity) },
                           periods: periods, periodsFailed: periodsFailed, tides: tides, sunset: sunset,
-                          beach: BeachAdvisor.advice(place: place, hours: beachHours))
+                          beach: BeachAdvisor.advice(place: place, hours: beachHours), cruise: cruise)
     }
 
     static func severityRank(_ s: String) -> Int {

@@ -22,6 +22,7 @@ WeatherWidget/          Widget views + shared logic (used by BOTH platforms)
 WeatherReportApp/       macOS host app (just explains how to add the widget)
 WeatherReportApp-iOS/   Native iPhone app (SwiftUI)
   Models.swift, AppService.swift   Richer fetch for the app screen (humidity, UV, NWS text, tide events, ...)
+  CruiseSchedule.swift             Newport cruise schedule: bundled public/cruise-newport.json, newer live copy preferred
   Store.swift                      State: GPS, saved locations, loading/refresh
   HomeView.swift, HomeSections.swift, SkySections.swift, LocationsView.swift
   Assets.xcassets                  App icon and launch background
@@ -60,8 +61,11 @@ Right-click the widget > Edit Widget to set the city or zip (default: New York).
 
 The app is a native SwiftUI app (no radar): GPS or searched locations (city or US zip), saved locations,
 pull to refresh, the NWS alert banners, hero, 24-hour strip, NWS text forecast, conditions, beach pick,
-7-day forecast with expandable NWS detail (NWS fetches retry on transient failures, with a tap-to-retry row if they still fail), sun (with sunset quality), moon and tides (next tide, curve,
-upcoming list). It uses the web app's dark atmospheric backgrounds and is always dark.
+7-day forecast with expandable NWS detail (NWS fetches retry on transient failures, with a tap-to-retry row if they still fail), sun (with sunset quality), moon, tides (next tide, curve,
+upcoming list) and, within 20 miles of Newport, RI, a cruise ships card (ships calling today and the next four days).
+The cruise schedule is `public/cruise-newport.json` (see the main README), bundled into the app and refreshed from
+`weather.dennen.dev/cruise-newport.json` when that copy is newer, so it stays current between reinstalls. The widgets
+and the macOS widget don't show it. It uses the web app's dark atmospheric backgrounds and is always dark.
 Accessibility: VoiceOver labels, Dynamic Type layouts, Reduce Motion support.
 
 1. Plug in the iPhone, unlock it, and turn on Developer Mode (Settings > Privacy & Security).

@@ -65,6 +65,8 @@ targets:
       - WeatherWidget/TideStatus.swift
       - path: ../public/stations.json
         buildPhase: resources
+      - path: ../public/cruise-newport.json
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjdennen.weatherreport.ios

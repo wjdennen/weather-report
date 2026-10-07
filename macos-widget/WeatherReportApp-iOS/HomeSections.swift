@@ -414,3 +414,52 @@ struct ForecastView: View {
         "\(label): \(cond). High \(Int(d.hi.rounded())), low \(Int(d.lo.rounded())). \(spokenWind(wind: d.wind, gust: d.gust, dir: d.dir))"
     }
 }
+
+struct CruiseView: View {
+    let w: AppWeather
+
+    var body: some View {
+        let days = w.cruiseDays
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(days) { day in
+                Text(day.label.uppercased())
+                    .font(.caption.weight(.bold)).tracking(0.8)
+                    .foregroundStyle(Color(red: 1, green: 0.76, blue: 0.46))
+                    .padding(.top, day.id == days.first?.id ? 0 : 10)
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(day.calls) { call in
+                    let cancelled = call.cancelled ?? false
+                    HStack(spacing: 12) {
+                        Image(systemName: "ferry.fill")
+                            .foregroundStyle(cancelled ? .white.opacity(0.4) : Color(red: 0.56, green: 0.84, blue: 1))
+                            .accessibilityHidden(true)
+                        Text(call.ship).font(.headline)
+                            .strikethrough(cancelled)
+                            .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
+                        Spacer(minLength: 8)
+                        if cancelled {
+                            Text("Cancelled").font(.footnote).foregroundStyle(.white.opacity(0.55))
+                        } else if day.isToday {
+                            Text("IN PORT TODAY").font(.caption2.weight(.bold)).tracking(0.6)
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(Color(red: 0.56, green: 0.84, blue: 1).opacity(0.25), in: Capsule())
+                        }
+                    }
+                    .padding(.vertical, 5)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(call.ship)\(cancelled ? ", cancelled" : day.isToday ? ", in port today" : "")")
+                }
+            }
+            Text("Perrotti Park schedule from the Newport Harbormaster, as of \(updatedText). Subject to change; times aren't published, and small ships docking at Fort Adams aren't included.")
+                .font(.caption).foregroundStyle(.white.opacity(0.6)).padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glass()
+    }
+
+    // "2026-09-24" -> "9/24"
+    var updatedText: String {
+        let p = (w.cruise?.updated ?? "").split(separator: "-").compactMap { Int($0) }
+        return p.count == 3 ? "\(p[1])/\(p[2])" : "recently"
+    }
+}

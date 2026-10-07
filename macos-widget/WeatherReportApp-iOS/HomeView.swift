@@ -32,6 +32,10 @@ struct HomeView: View {
                         MoonView()
                         SectionTitle("Tides").id("tides")
                         TidesView(w: w)
+                        if !w.cruiseDays.isEmpty {
+                            SectionTitle("Cruise Ships").id("cruise")
+                            CruiseView(w: w)
+                        }
                         credits(w).id("bottom")
                     }
                     .padding(.horizontal, 16)
@@ -133,6 +137,7 @@ struct HomeView: View {
         var s = "Weather by Open-Meteo · Forecast text and alerts by NOAA NWS"
         if w.tides != nil { s += " · Tides by NOAA CO-OPS" }
         if w.sunset != nil { s += " · Sunset forecast by Sunsethue" }
+        if !w.cruiseDays.isEmpty { s += " · Cruise schedule from Discover Newport" }
         // When the data was fetched is a real-world moment, so show it in the phone's time zone
         // (unlike forecast and tide times, which belong to the location's time zone).
         let updated = w.fetched.formatted(date: .omitted, time: .shortened)

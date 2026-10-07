@@ -123,6 +123,7 @@ struct AppWeather {
     let tides: TideData?
     let sunset: SunsetQuality?
     let beach: BeachAdvice?
+    let cruise: CruiseSchedule?   // only loaded near Newport, RI
 
     var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
