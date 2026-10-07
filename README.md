@@ -15,6 +15,7 @@ A PWA weather app for current conditions, hourly forecasts, 7-day outlook, tides
 - **Sun** — sunrise, sunset, daylight duration, solar noon arc; tonight's (or tomorrow's) sunset quality rating, cloud cover and best-light window from Sunsethue, shown only when the Worker proxy is configured
 - **Tides** — nearest NOAA tide station (within 150 mi); a "next tide" summary with where you are in the cycle (rising/falling, just past, nearly, mid-tide); today's tide curve as a smooth SVG chart; chronological high/low tide list with Today/Tomorrow day labels; stations with only hi/lo data get sinusoidal interpolation for the chart
 - **Beach pick** — near Aquidneck Island / Little Compton, RI only: ranks 10 local beaches by how much of the next 4 hours of forecast wind blows in your face (each beach's facing direction measured from OpenStreetMap coastline data), with a best pick and an "any beach is fine" call under 8 mph; same logic as the macOS widget (`macos-widget/WeatherWidget/Beaches.swift`)
+- **Cruise ships** — within 20 miles of Newport, RI only: which ships are calling today and over the next four days, from the Newport Harbormaster's published Perrotti Park schedule (dates and ship names only; cancelled calls shown struck through). Stored as a bundled snapshot, `public/cruise-newport.json`, refreshed by hand (see Refresh cruise schedule)
 - **Atmospheric background** — gradient shifts dynamically based on weather condition and time of day
 - **Location search** — tap the location name or `+` button to search by city name or US zip code; save multiple locations; persistent in localStorage
 - **Geolocation** — defaults to browser GPS with reverse geocoding; skips geolocation on return visits if a saved location exists (loads instantly)
@@ -38,6 +39,7 @@ Single full-screen scroll — no bottom navigation bar. Everything is on one pag
 9. Sun info
 10. Moon phase
 11. Tides
+12. Cruise ships (only within 20 miles of Newport, RI)
 
 To change location, tap the location name or the `+` button in the top bar.
 
@@ -52,6 +54,7 @@ To change location, tap the location name or the `+` button in the top bar.
 | Reverse geocoding (GPS → city name) | [BigDataCloud](https://api.bigdatacloud.net/) |
 | Detailed text forecasts + alerts (US only) | [NOAA NWS API](https://api.weather.gov/) |
 | Sunset quality | [Sunsethue](https://sunsethue.com/dev-api), proxied through the Worker in `worker/index.js` so the API key stays server-side (needs a key; the feature is hidden without one) |
+| Cruise ship schedule (Newport, RI only) | [Discover Newport](https://www.discovernewport.org/industry/cruise-ship-schedule/) / Office of the Newport Harbormaster, transcribed from their schedule PDF into the bundled `public/cruise-newport.json` (no live fetch) |
 | Animated radar overlay | [RainViewer](https://www.rainviewer.com/api.html) |
 | Base map tiles | [ESRI](https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer) World Dark Gray (free, no key) |
 | Tide station list | Bundled `public/stations.json` (~3,450 NOAA stations) |
@@ -139,6 +142,16 @@ Append query params to the URL to test UI states without needing real data:
 
 Commit and push — no cache bump needed.
 
+## Refresh cruise schedule
+
+`public/cruise-newport.json` is a hand-transcribed copy of the Newport Harbormaster's Perrotti Park schedule PDF (via Discover Newport). To see whether a newer one has been published:
+
+```bash
+./scripts/check-cruise.sh   # exit 0 = current, 1 = newer PDF published, 2 = couldn't check
+```
+
+If it reports a change, open the PDF it prints, update `calls` (one `{date, ship}` per row, add `"cancelled": true` for struck-through rows — the strikethrough isn't in the PDF's text layer, so check the rendered page), and set `pdfUrl` and `updated`. Commit and push — no cache bump needed. The PDF has no times and doesn't cover the South Alofsin Pier at Fort Adams (small ships such as American Cruise Lines); the card's footnote says so.
+
 ## Project structure
 
 ```
@@ -148,6 +161,7 @@ public/
   sw.js                 Service worker (app shell cache; version stamped at build)
   _headers              Cloudflare HTTP headers
   stations.json         Bundled NOAA tide station list (~3,450 stations)
+  cruise-newport.json   Bundled Newport, RI cruise schedule snapshot (hand-refreshed)
   favicon.ico           Tab icon (16/32/48 px)
   icons/
     icon.svg            Source art for the app icons ("Sunset tide")
@@ -158,6 +172,7 @@ worker/
 macos-widget/           macOS widget + iPhone app (SwiftUI/WidgetKit); see its README
 scripts/
   refresh-stations.sh   Re-downloads stations.json from NOAA
+  check-cruise.sh       Reports whether Discover Newport has published a newer cruise schedule PDF
   refresh-ios.sh        Rebuilds and reinstalls the iPhone app (beats the 7-day free-signing expiry)
 build.sh                Stamps build timestamp + SW cache version before deploy
 wrangler.toml           Cloudflare config (assets directory ./public; Worker runs for /api/*)

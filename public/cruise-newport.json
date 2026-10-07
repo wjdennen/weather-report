@@ -1,0 +1,188 @@
+{
+ "port": "Newport, RI",
+ "source": "Discover Newport / Office of the Newport Harbormaster (Perrotti Park schedule)",
+ "sourcePage": "https://www.discovernewport.org/industry/cruise-ship-schedule/",
+ "pdfUrl": "https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/newportri/cruise_ship_schedules_9_24_26_perrotti_51b5e166-edd7-434b-9a4f-9d237928d4b1.pdf",
+ "updated": "2026-09-24",
+ "calls": [
+  {
+   "date": "2026-04-05",
+   "ship": "Valiant Lady",
+   "cancelled": true
+  },
+  {
+   "date": "2026-04-23",
+   "ship": "Zuiderdam"
+  },
+  {
+   "date": "2026-07-05",
+   "ship": "Queen Mary 2"
+  },
+  {
+   "date": "2026-09-05",
+   "ship": "Seven Seas Splendor"
+  },
+  {
+   "date": "2026-09-09",
+   "ship": "AIDAdiva"
+  },
+  {
+   "date": "2026-09-11",
+   "ship": "Norwegian Escape"
+  },
+  {
+   "date": "2026-09-14",
+   "ship": "Seabourn Ovation"
+  },
+  {
+   "date": "2026-09-18",
+   "ship": "Norwegian Escape"
+  },
+  {
+   "date": "2026-09-18",
+   "ship": "Crystal Symphony",
+   "cancelled": true
+  },
+  {
+   "date": "2026-09-20",
+   "ship": "Norwegian Escape"
+  },
+  {
+   "date": "2026-09-20",
+   "ship": "Regal Princess",
+   "cancelled": true
+  },
+  {
+   "date": "2026-09-21",
+   "ship": "AIDAdiva"
+  },
+  {
+   "date": "2026-09-22",
+   "ship": "Silver Shadow"
+  },
+  {
+   "date": "2026-09-22",
+   "ship": "Arcadia"
+  },
+  {
+   "date": "2026-09-24",
+   "ship": "Amera"
+  },
+  {
+   "date": "2026-09-24",
+   "ship": "Arcadia",
+   "cancelled": true
+  },
+  {
+   "date": "2026-09-27",
+   "ship": "Regal Princess",
+   "cancelled": true
+  },
+  {
+   "date": "2026-10-04",
+   "ship": "Majestic Princess"
+  },
+  {
+   "date": "2026-10-07",
+   "ship": "AIDAdiva"
+  },
+  {
+   "date": "2026-10-07",
+   "ship": "Vista"
+  },
+  {
+   "date": "2026-10-08",
+   "ship": "Azamara Journey"
+  },
+  {
+   "date": "2026-10-09",
+   "ship": "L'Austral"
+  },
+  {
+   "date": "2026-10-11",
+   "ship": "Majestic Princess"
+  },
+  {
+   "date": "2026-10-12",
+   "ship": "Silver Shadow"
+  },
+  {
+   "date": "2026-10-12",
+   "ship": "Norwegian Breakaway"
+  },
+  {
+   "date": "2026-10-14",
+   "ship": "Silver Shadow"
+  },
+  {
+   "date": "2026-10-15",
+   "ship": "Le Bellot"
+  },
+  {
+   "date": "2026-10-16",
+   "ship": "Le Lyrial"
+  },
+  {
+   "date": "2026-10-17",
+   "ship": "Viking Mars"
+  },
+  {
+   "date": "2026-10-18",
+   "ship": "Seabourn Ovation"
+  },
+  {
+   "date": "2026-10-18",
+   "ship": "Majestic Princess"
+  },
+  {
+   "date": "2026-10-20",
+   "ship": "Seabourn Ovation"
+  },
+  {
+   "date": "2026-10-23",
+   "ship": "Victory II"
+  },
+  {
+   "date": "2026-10-24",
+   "ship": "Viking Mars"
+  },
+  {
+   "date": "2026-10-25",
+   "ship": "Majestic Princess"
+  },
+  {
+   "date": "2026-10-25",
+   "ship": "Crystal Symphony"
+  },
+  {
+   "date": "2026-10-28",
+   "ship": "Azamara Journey"
+  },
+  {
+   "date": "2026-10-28",
+   "ship": "Orient Express",
+   "cancelled": true
+  },
+  {
+   "date": "2026-10-30",
+   "ship": "AIDAdiva"
+  },
+  {
+   "date": "2026-10-31",
+   "ship": "Sapphire Princess"
+  },
+  {
+   "date": "2026-11-01",
+   "ship": "Majestic Princess"
+  },
+  {
+   "date": "2026-11-02",
+   "ship": "Silver Shadow"
+  },
+  {
+   "date": "2026-11-12",
+   "ship": "Victory I",
+   "cancelled": true
+  }
+ ]
+}

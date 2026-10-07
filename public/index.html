@@ -464,6 +464,24 @@ html, body {
 .tide-row-height { font-size: 13px; font-weight: 500; color: var(--primary); margin-top: 1px; }
 .tide-row-day { font-size: 11px; font-weight: 600; color: var(--tertiary); opacity: 0.8; }
 
+.cruise-card {
+  background: var(--surface-container); border: 1px solid var(--outline-variant);
+  border-radius: 16px; padding: 4px 18px 8px; margin-bottom: 14px;
+}
+.cruise-day { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tertiary); padding: 14px 0 2px; }
+.cruise-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--outline-variant); }
+.cruise-row:last-child { border-bottom: none; }
+.cruise-row .msym { font-size: 22px; color: var(--primary); flex-shrink: 0; }
+.cruise-main { flex: 1; min-width: 0; }
+.cruise-ship { font-size: 16px; font-weight: 700; color: var(--on-surface); }
+.cruise-times { font-size: 13px; font-weight: 600; color: var(--primary); text-align: right; white-space: nowrap; }
+.cruise-times.dim { color: var(--outline); font-weight: 500; }
+.cruise-row.cancelled .cruise-ship { text-decoration: line-through; color: var(--outline); font-weight: 500; }
+.cruise-row.cancelled .msym { color: var(--outline); }
+.cruise-pill { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  color: var(--on-primary, #00344d); background: var(--primary); border-radius: 8px; padding: 2px 7px; }
+.cruise-note { font-size: 11px; color: var(--outline); padding: 8px 0 4px; line-height: 1.4; }
+
 .sun-card {
   background: var(--surface-container);
   border: 1px solid var(--outline-variant);
@@ -1212,6 +1230,22 @@ function synthesizeHourly(hilo, todayStr) {
 /* ═══════════════════════════════
    MAIN LOAD
 ═══════════════════════════════ */
+// Cruise ships calling at Newport, RI: a bundled snapshot of the Harbormaster's published schedule
+// (public/cruise-newport.json; see the README for how it's refreshed). Only loaded for locations
+// within CRUISE_MAX_MI of the port. Resolves null on any failure.
+const CRUISE_PORT = [41.4901, -71.3128];
+const CRUISE_MAX_MI = 20;
+const CRUISE_DAYS = 5;                 // today plus the next four
+const nearCruisePort = (lat, lon) => lat != null && haversine(lat, lon, CRUISE_PORT[0], CRUISE_PORT[1]) <= CRUISE_MAX_MI;
+async function fetchCruise() {
+  try {
+    const r = await fetch('/cruise-newport.json');
+    if (!r.ok) return null;
+    const d = await r.json();
+    return Array.isArray(d.calls) ? d : null;
+  } catch { return null; }
+}
+
 // Sunsethue sunset-quality forecast, via our Worker proxy (worker/index.js) so the API key stays
 // server-side. Resolves null on any failure (including no Worker, e.g. a plain local static server).
 async function fetchSunsetQuality(lat, lon, date) {
@@ -1243,6 +1277,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.noaaFailed = false;
   state.alerts = null;
   state.sunsetQuality = null;
+  state.cruise = null;
 
   document.getElementById('nav-location').textContent = name;
   document.getElementById('nav-pin').textContent = isGeo ? 'my_location' : 'location_on';
@@ -1265,6 +1300,14 @@ async function loadLocation(lat, lon, name, isGeo = false) {
       state.sunsetQuality = { ...q, tonight: sunIdx === 0 };
       if (state.tab === 'home') renderHome();
     });
+
+    if (nearCruisePort(lat, lon)) {
+      fetchCruise().then(c => {
+        if (!stillCurrent() || !c) return;
+        state.cruise = c;
+        if (state.tab === 'home') renderHome();
+      });
+    }
 
     // NWS detailed forecast + alerts in background (US only; silently skipped outside US)
     loadNWSForecast(lat, lon, stillCurrent);
@@ -1557,6 +1600,43 @@ function sunArcSVG(sunriseISO, sunsetISO, now) {
 /* ═══════════════════════════════
    RENDER: HOME
 ═══════════════════════════════ */
+// Ships calling at Newport today and over the next few days. `now` is the wall-clock time at the
+// location (Newport and everything within CRUISE_MAX_MI of it share a time zone). The schedule
+// has dates and ship names only. Empty string = no card.
+function buildCruiseHTML(cruise, now) {
+  if (!cruise) return '';
+  const today = dateStr(now, '-');
+  const last = dateStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() + CRUISE_DAYS - 1), '-');
+  const calls = cruise.calls.filter(c => c.date >= today && c.date <= last)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.cancelled ? 1 : 0) - (b.cancelled ? 1 : 0));
+  if (!calls.length) return '';
+  const tomorrow = dateStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), '-');
+  let html = '', day = '';
+  for (const c of calls) {
+    if (c.date !== day) {
+      day = c.date;
+      const d = new Date(+c.date.slice(0, 4), +c.date.slice(5, 7) - 1, +c.date.slice(8, 10));
+      const label = c.date === today ? 'Today' : c.date === tomorrow ? 'Tomorrow' : DAYS_FULL[d.getDay()];
+      html += `<div class="cruise-day">${label} · ${d.getMonth() + 1}/${d.getDate()}</div>`;
+    }
+    html += `<div class="cruise-row${c.cancelled ? ' cancelled' : ''}">
+      ${msym('directions_boat')}
+      <div class="cruise-main"><div class="cruise-ship">${escHtml(c.ship)}</div></div>
+      ${c.cancelled ? '<div class="cruise-times dim">Cancelled</div>' : c.date === today ? '<div class="cruise-pill">In port today</div>' : ''}
+    </div>`;
+  }
+  const [uy, um, ud] = cruise.updated.split('-').map(Number);
+  return `
+    <div class="section-heading-row">
+      <div class="section-heading" style="margin:0">Cruise Ships</div>
+      <div class="station-name-sm">Newport, RI</div>
+    </div>
+    <div class="cruise-card">
+      ${html}
+      <div class="cruise-note">Perrotti Park schedule from the Newport Harbormaster, as of ${um}/${ud}. Subject to change; times aren't published, and small ships docking at Fort Adams aren't included.</div>
+    </div>`;
+}
+
 function renderHome() {
   const el = document.getElementById('screen-home');
   if (!state.weather) {
@@ -1713,6 +1793,8 @@ function renderHome() {
         </div>
       </div>
     </div>`;
+
+  const cruiseHTML = buildCruiseHTML(state.cruise, now);
 
   // Tide section
   let tideHTML = '';
@@ -1916,9 +1998,10 @@ function renderHome() {
     ${sunHTML}
     ${moonHTML}
     ${tideHTML}
+    ${cruiseHTML}
 
     <div class="powered-by">
-      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit}${sq ? ' · Sunset forecast by <a href="https://sunsethue.com" target="_blank">Sunsethue</a>' : ''}<br>v__BUILD_NUM__ · built __BUILD_TIME__<br>a clamcode thing
+      Weather by <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>${tideCredit}${sq ? ' · Sunset forecast by <a href="https://sunsethue.com" target="_blank">Sunsethue</a>' : ''}${cruiseHTML ? ' · Cruise schedule from <a href="https://www.discovernewport.org/industry/cruise-ship-schedule/" target="_blank">Discover Newport</a>' : ''}<br>v__BUILD_NUM__ · built __BUILD_TIME__<br>a clamcode thing
     </div>`;
 
   // Slide hourly day labels as user scrolls — TODAY stays frozen, then slides out as TOMORROW slides in
