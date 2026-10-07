@@ -62,7 +62,7 @@ Right-click the widget > Edit Widget to set the city or zip (default: New York).
 The app is a native SwiftUI app (no radar): GPS or searched locations (city or US zip), saved locations,
 pull to refresh, the NWS alert banners, hero, 24-hour strip, NWS text forecast, conditions, beach pick,
 7-day forecast with expandable NWS detail (NWS fetches retry on transient failures, with a tap-to-retry row if they still fail), sun (with sunset quality), moon, tides (next tide, curve,
-upcoming list) and, within 20 miles of Newport, RI, a cruise ships card (ships calling today and the next four days).
+upcoming list) and, within 20 miles of Newport, RI, a cruise ships card (ships calling today and the next four days, with cruise line; tap a ship for passengers and ports of call).
 The cruise schedule is `public/cruise-newport.json` (see the main README), bundled into the app and refreshed from
 `weather.dennen.dev/cruise-newport.json` when that copy is newer, so it stays current between reinstalls. The widgets
 and the macOS widget don't show it. It uses the web app's dark atmospheric backgrounds and is always dark.

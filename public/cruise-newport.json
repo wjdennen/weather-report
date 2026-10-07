@@ -4,6 +4,65 @@
  "sourcePage": "https://www.discovernewport.org/industry/cruise-ship-schedule/",
  "pdfUrl": "https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/newportri/cruise_ship_schedules_9_24_26_perrotti_51b5e166-edd7-434b-9a4f-9d237928d4b1.pdf",
  "updated": "2026-09-24",
+ "itinerariesUpdated": "2026-10-07",
+ "ships": {
+  "AIDAdiva": {
+   "line": "AIDA Cruises",
+   "passengers": 2050
+  },
+  "Oceania Vista": {
+   "line": "Oceania Cruises",
+   "passengers": 1200
+  },
+  "Azamara Journey": {
+   "line": "Azamara",
+   "passengers": 690
+  },
+  "L'Austral": {
+   "line": "Ponant",
+   "passengers": 264
+  },
+  "Majestic Princess": {
+   "line": "Princess Cruises",
+   "passengers": 3560
+  },
+  "Silver Shadow": {
+   "line": "Silversea",
+   "passengers": 392
+  },
+  "Norwegian Breakaway": {
+   "line": "Norwegian Cruise Line",
+   "passengers": 3963
+  },
+  "Le Bellot": {
+   "line": "Ponant",
+   "passengers": 184
+  },
+  "Le Lyrial": {
+   "line": "Ponant",
+   "passengers": 244
+  },
+  "Viking Mars": {
+   "line": "Viking",
+   "passengers": 930
+  },
+  "Seabourn Ovation": {
+   "line": "Seabourn",
+   "passengers": 604
+  },
+  "Victory II": {
+   "line": "Victory Cruise Lines",
+   "passengers": 202
+  },
+  "Crystal Symphony": {
+   "line": "Crystal",
+   "passengers": 606
+  },
+  "Sapphire Princess": {
+   "line": "Princess Cruises",
+   "passengers": 2670
+  }
+ },
  "calls": [
   {
    "date": "2026-04-05",
@@ -84,23 +143,215 @@
   },
   {
    "date": "2026-10-07",
-   "ship": "AIDAdiva"
+   "ship": "AIDAdiva",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-05"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-07"
+    },
+    {
+     "port": "Saint John, NB"
+    },
+    {
+     "port": "Portland, ME"
+    },
+    {
+     "port": "Boston, MA"
+    },
+    {
+     "port": "Norfolk, VA"
+    },
+    {
+     "port": "Baltimore, MD"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-17"
+    }
+   ]
   },
   {
    "date": "2026-10-07",
-   "ship": "Vista"
+   "ship": "Oceania Vista",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-06"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-07"
+    },
+    {
+     "port": "Boston, MA"
+    },
+    {
+     "port": "Saint John, NB"
+    },
+    {
+     "port": "Halifax, NS"
+    },
+    {
+     "port": "Sydney, NS"
+    },
+    {
+     "port": "Corner Brook, NL"
+    },
+    {
+     "port": "Saguenay, QC"
+    },
+    {
+     "port": "Quebec City, QC"
+    },
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-17"
+    }
+   ]
   },
   {
    "date": "2026-10-08",
-   "ship": "Azamara Journey"
+   "ship": "Azamara Journey",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-07"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-08"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-09"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-10"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-12"
+    },
+    {
+     "port": "Sydney, NS",
+     "date": "2026-10-13"
+    },
+    {
+     "port": "Charlottetown, PE",
+     "date": "2026-10-14"
+    },
+    {
+     "port": "Cap-aux-Meules, QC",
+     "date": "2026-10-15"
+    },
+    {
+     "port": "Saguenay, QC",
+     "date": "2026-10-17"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-18"
+    },
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-19"
+    }
+   ]
   },
   {
    "date": "2026-10-09",
-   "ship": "L'Austral"
+   "ship": "L'Austral",
+   "arrive": "07:00",
+   "depart": "16:00",
+   "itinerary": [
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-06",
+     "depart": "18:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-08",
+     "arrive": "06:00",
+     "depart": "19:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-09",
+     "arrive": "07:00",
+     "depart": "16:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-10",
+     "arrive": "07:30",
+     "depart": "23:00"
+    },
+    {
+     "port": "Philadelphia, PA",
+     "date": "2026-10-12",
+     "arrive": "06:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Baltimore, MD",
+     "date": "2026-10-13",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-11",
-   "ship": "Majestic Princess"
+   "ship": "Majestic Princess",
+   "arrive": "07:00",
+   "depart": "17:00",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-10",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-11",
+     "arrive": "07:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-12",
+     "arrive": "11:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-13",
+     "arrive": "07:00",
+     "depart": "13:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-14",
+     "arrive": "04:00",
+     "depart": "15:30"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-15",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-17",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-12",
@@ -108,23 +359,267 @@
   },
   {
    "date": "2026-10-12",
-   "ship": "Norwegian Breakaway"
+   "ship": "Norwegian Breakaway",
+   "arrive": "10:00",
+   "depart": "18:00",
+   "itinerary": [
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-11",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-12",
+     "arrive": "10:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Bar Harbor, ME",
+     "date": "2026-10-14",
+     "arrive": "08:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-15",
+     "arrive": "08:00",
+     "depart": "16:00"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-16",
+     "arrive": "10:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-18",
+     "arrive": "08:00"
+    }
+   ]
   },
   {
    "date": "2026-10-14",
-   "ship": "Silver Shadow"
+   "ship": "Silver Shadow",
+   "arrive": "08:30",
+   "depart": "20:00",
+   "itinerary": [
+    {
+     "port": "Bayonne, NJ",
+     "date": "2026-10-13",
+     "depart": "19:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-14",
+     "arrive": "08:30",
+     "depart": "20:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-15",
+     "arrive": "08:00",
+     "depart": "21:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-16",
+     "arrive": "08:00",
+     "depart": "23:00"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-18",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Charlottetown, PE",
+     "date": "2026-10-20",
+     "arrive": "08:00",
+     "depart": "16:00"
+    },
+    {
+     "port": "Saguenay, QC",
+     "date": "2026-10-22",
+     "arrive": "12:00",
+     "depart": "19:00"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-23",
+     "arrive": "08:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-24",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-15",
-   "ship": "Le Bellot"
+   "ship": "Le Bellot",
+   "arrive": "00:30",
+   "depart": "17:00",
+   "itinerary": [
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-06",
+     "depart": "18:00"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-08",
+     "arrive": "07:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Louisbourg, NS",
+     "date": "2026-10-09",
+     "arrive": "11:00",
+     "depart": "17:45"
+    },
+    {
+     "port": "Lunenburg, NS",
+     "date": "2026-10-10",
+     "arrive": "14:00",
+     "depart": "19:00"
+    },
+    {
+     "port": "Yarmouth, NS",
+     "date": "2026-10-11",
+     "arrive": "12:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Eastport, ME",
+     "date": "2026-10-12",
+     "arrive": "06:00",
+     "depart": "16:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-13",
+     "arrive": "08:30",
+     "depart": "18:00"
+    },
+    {
+     "port": "Provincetown, MA",
+     "date": "2026-10-14",
+     "arrive": "08:00",
+     "depart": "14:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-15",
+     "arrive": "00:30",
+     "depart": "17:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-16",
+     "arrive": "07:00",
+     "depart": "23:59"
+    },
+    {
+     "port": "Oak Bluffs, MA",
+     "date": "2026-10-18",
+     "arrive": "07:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-19",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-16",
-   "ship": "Le Lyrial"
+   "ship": "Le Lyrial",
+   "itinerary": [
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-04"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-05"
+    },
+    {
+     "port": "Tadoussac, QC",
+     "date": "2026-10-06"
+    },
+    {
+     "port": "Cap-aux-Meules, QC"
+    },
+    {
+     "port": "Louisbourg, NS"
+    },
+    {
+     "port": "Halifax, NS"
+    },
+    {
+     "port": "Eastport, ME"
+    },
+    {
+     "port": "Boston, MA"
+    },
+    {
+     "port": "Oak Bluffs, MA"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-16"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-17"
+    }
+   ]
   },
   {
    "date": "2026-10-17",
-   "ship": "Viking Mars"
+   "ship": "Viking Mars",
+   "arrive": "07:00",
+   "depart": "14:00",
+   "itinerary": [
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-06"
+    },
+    {
+     "port": "Quebec City, QC"
+    },
+    {
+     "port": "Saguenay, QC"
+    },
+    {
+     "port": "Charlottetown, PE"
+    },
+    {
+     "port": "Saint John, NB"
+    },
+    {
+     "port": "Eastport, ME"
+    },
+    {
+     "port": "Portland, ME"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-17",
+     "arrive": "07:00",
+     "depart": "14:00"
+    },
+    {
+     "port": "Fort Lauderdale, FL",
+     "date": "2026-10-20"
+    }
+   ]
   },
   {
    "date": "2026-10-18",
@@ -132,11 +627,110 @@
   },
   {
    "date": "2026-10-18",
-   "ship": "Majestic Princess"
+   "ship": "Majestic Princess",
+   "arrive": "07:00",
+   "depart": "17:00",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-17",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-18",
+     "arrive": "07:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-19",
+     "arrive": "11:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-20",
+     "arrive": "07:00",
+     "depart": "13:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-21",
+     "arrive": "04:00",
+     "depart": "15:30"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-22",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-24",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-20",
-   "ship": "Seabourn Ovation"
+   "ship": "Seabourn Ovation",
+   "arrive": "08:00",
+   "depart": "18:00",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-19",
+     "depart": "17:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-20",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-21",
+     "arrive": "08:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Rockland, ME",
+     "date": "2026-10-22",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-24",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Charlottetown, PE",
+     "date": "2026-10-26",
+     "arrive": "08:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Saguenay, QC",
+     "date": "2026-10-28",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-29",
+     "depart": "18:00"
+    },
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-31",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-23",
@@ -148,15 +742,194 @@
   },
   {
    "date": "2026-10-25",
-   "ship": "Majestic Princess"
+   "ship": "Majestic Princess",
+   "arrive": "07:00",
+   "depart": "17:00",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-24",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-25",
+     "arrive": "07:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-26",
+     "arrive": "11:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-27",
+     "arrive": "07:00",
+     "depart": "13:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-28",
+     "arrive": "04:00",
+     "depart": "15:30"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-29",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-31",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-10-25",
-   "ship": "Crystal Symphony"
+   "ship": "Crystal Symphony",
+   "arrive": "10:00",
+   "depart": "18:00",
+   "itinerary": [
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-16"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-17"
+    },
+    {
+     "port": "Îles de la Madeleine, QC",
+     "date": "2026-10-19"
+    },
+    {
+     "port": "Sydney, NS",
+     "date": "2026-10-20"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-21"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-22"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-23"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-24"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-25",
+     "arrive": "10:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-26"
+    },
+    {
+     "port": "Kings Wharf, Bermuda",
+     "date": "2026-10-29"
+    },
+    {
+     "port": "Santo Domingo, Dominican Republic",
+     "date": "2026-11-02"
+    },
+    {
+     "port": "Samaná, Dominican Republic",
+     "date": "2026-11-03"
+    },
+    {
+     "port": "San Juan, Puerto Rico",
+     "date": "2026-11-04"
+    },
+    {
+     "port": "Jost Van Dyke, BVI",
+     "date": "2026-11-05"
+    },
+    {
+     "port": "St. John's, Antigua",
+     "date": "2026-11-06"
+    },
+    {
+     "port": "St. Barthélemy",
+     "date": "2026-11-07"
+    },
+    {
+     "port": "St. Thomas, USVI",
+     "date": "2026-11-08"
+    },
+    {
+     "port": "Fort Lauderdale, FL",
+     "date": "2026-11-11"
+    }
+   ]
   },
   {
    "date": "2026-10-28",
-   "ship": "Azamara Journey"
+   "ship": "Azamara Journey",
+   "arrive": "08:00",
+   "depart": "18:00",
+   "itinerary": [
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-19",
+     "depart": "20:00"
+    },
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-20",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Sydney, NS",
+     "date": "2026-10-22",
+     "arrive": "08:30",
+     "depart": "17:00"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-23",
+     "arrive": "11:00",
+     "depart": "22:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-10-25",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-10-26",
+     "arrive": "08:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Boston, MA"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-28",
+     "arrive": "08:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-29",
+     "arrive": "06:00"
+    }
+   ]
   },
   {
    "date": "2026-10-28",
@@ -165,19 +938,182 @@
   },
   {
    "date": "2026-10-30",
-   "ship": "AIDAdiva"
+   "ship": "AIDAdiva",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-17"
+    },
+    {
+     "port": "Freeport, Bahamas"
+    },
+    {
+     "port": "Miami, FL"
+    },
+    {
+     "port": "Port Canaveral, FL"
+    },
+    {
+     "port": "Norfolk, VA"
+    },
+    {
+     "port": "Baltimore, MD"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-30"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-10-31"
+    }
+   ]
   },
   {
    "date": "2026-10-31",
-   "ship": "Sapphire Princess"
+   "ship": "Sapphire Princess",
+   "arrive": "09:00",
+   "depart": "18:30",
+   "itinerary": [
+    {
+     "port": "Quebec City, QC",
+     "date": "2026-10-23",
+     "depart": "17:00"
+    },
+    {
+     "port": "Saguenay, QC",
+     "date": "2026-10-24",
+     "arrive": "07:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Charlottetown, PE",
+     "date": "2026-10-26",
+     "arrive": "09:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Sydney, NS",
+     "date": "2026-10-27",
+     "arrive": "07:00",
+     "depart": "16:30"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-10-28",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-10-30",
+     "arrive": "07:00",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-10-31",
+     "arrive": "09:00",
+     "depart": "18:30"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-11-01",
+     "arrive": "07:00"
+    },
+    {
+     "port": "Nassau, Bahamas",
+     "date": "2026-11-05",
+     "arrive": "09:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Fort Lauderdale, FL",
+     "date": "2026-11-06",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-11-01",
-   "ship": "Majestic Princess"
+   "ship": "Majestic Princess",
+   "arrive": "07:00",
+   "depart": "17:00",
+   "itinerary": [
+    {
+     "port": "New York, NY",
+     "date": "2026-10-31",
+     "depart": "16:00"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-11-01",
+     "arrive": "07:00",
+     "depart": "17:00"
+    },
+    {
+     "port": "Boston, MA",
+     "date": "2026-11-02",
+     "arrive": "11:00",
+     "depart": "20:00"
+    },
+    {
+     "port": "Portland, ME",
+     "date": "2026-11-03",
+     "arrive": "07:00",
+     "depart": "13:00"
+    },
+    {
+     "port": "Saint John, NB",
+     "date": "2026-11-04",
+     "arrive": "04:00",
+     "depart": "15:30"
+    },
+    {
+     "port": "Halifax, NS",
+     "date": "2026-11-05",
+     "arrive": "09:00",
+     "depart": "18:00"
+    },
+    {
+     "port": "New York, NY",
+     "date": "2026-11-07",
+     "arrive": "07:00"
+    }
+   ]
   },
   {
    "date": "2026-11-02",
-   "ship": "Silver Shadow"
+   "ship": "Silver Shadow",
+   "itinerary": [
+    {
+     "port": "Montreal, QC",
+     "date": "2026-10-24"
+    },
+    {
+     "port": "Quebec City, QC"
+    },
+    {
+     "port": "Charlottetown, PE"
+    },
+    {
+     "port": "Halifax, NS"
+    },
+    {
+     "port": "Portland, ME"
+    },
+    {
+     "port": "Boston, MA"
+    },
+    {
+     "port": "Newport, RI",
+     "date": "2026-11-02"
+    },
+    {
+     "port": "Bayonne, NJ",
+     "date": "2026-11-04"
+    }
+   ]
   },
   {
    "date": "2026-11-12",

@@ -14,10 +14,12 @@
 - **Cruise card: CruiseMapper times** — if CruiseMapper replies yes (asked 2026-10-07), rebuild a Worker scraper within the limits we offered (Newport page only, cache 24h+, clear user agent, credit link) to add arrival/departure times and cruise lines. Don't scrape until they agree in writing. See `docs/cruise-ships-spec.md`.
 - **Cruise card: Fort Adams ships** — the Harbormaster's South Alofsin Pier schedule (small ships like American Cruise Lines) wasn't published as of 9/24/26; check `./scripts/check-cruise.sh` (it flags extra PDFs) and add those calls when it appears.
 - **Cruise card: automate the freshness check** — `scripts/check-cruise.sh` is manual; could run weekly as a GitHub Action that opens an issue when a newer schedule PDF is posted.
+- **Cruise card: missing itineraries** — as of 10/7/26 four upcoming calls have no itinerary (Silver Shadow 10/12, Seabourn Ovation 10/18, Victory II 10/23, Viking Mars 10/24); several others list ports in order but without every date. Itineraries are hand-compiled per season, so redo them for the 2027 season when the Harbormaster publishes it.
 - **Cruise card: widgets** — the card is in the web and iPhone apps; the iOS and macOS widgets don't show cruise ships (little room; could be a line on the large widget).
 
 ## Done
 
+- ~~**Cruise line, passengers and itinerary per ship**~~ — each cruise row shows its line and expands to passengers and ports of call (web and iPhone).
 - ~~**Cruise card in the iPhone app**~~ — same schedule, bundled with the app and refreshed from the site when newer.
 - ~~**Cruise ships in port (Newport, RI)**~~ — web card within 20 miles of Newport from the Harbormaster's schedule, bundled as `public/cruise-newport.json` with a manual freshness check (v1.2).
 - ~~**Tide next high/low summary**~~ — the Tides card now opens with a "next tide" summary and where you are in the cycle.

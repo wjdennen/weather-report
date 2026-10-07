@@ -469,17 +469,29 @@ html, body {
   border-radius: 16px; padding: 4px 18px 8px; margin-bottom: 14px;
 }
 .cruise-day { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tertiary); padding: 14px 0 2px; }
-.cruise-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--outline-variant); }
-.cruise-row:last-child { border-bottom: none; }
+.cruise-item { border-bottom: 1px solid var(--outline-variant); }
+.cruise-item:last-child { border-bottom: none; }
+.cruise-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.cruise-row.expandable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .cruise-row .msym { font-size: 22px; color: var(--primary); flex-shrink: 0; }
+.cruise-row .msym.cruise-chev { font-size: 20px; color: var(--on-surface-variant); opacity: 0.7; transition: transform 0.2s; }
 .cruise-main { flex: 1; min-width: 0; }
 .cruise-ship { font-size: 16px; font-weight: 700; color: var(--on-surface); }
-.cruise-times { font-size: 13px; font-weight: 600; color: var(--primary); text-align: right; white-space: nowrap; }
-.cruise-times.dim { color: var(--outline); font-weight: 500; }
+.cruise-line { font-size: 12px; color: var(--on-surface-variant); margin-top: 1px; }
+.cruise-side { text-align: right; flex-shrink: 0; }
+.cruise-times { font-size: 12px; font-weight: 600; color: var(--primary); white-space: nowrap; }
+.cruise-times.dim { color: var(--outline); font-weight: 500; font-size: 13px; }
 .cruise-row.cancelled .cruise-ship { text-decoration: line-through; color: var(--outline); font-weight: 500; }
 .cruise-row.cancelled .msym { color: var(--outline); }
-.cruise-pill { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
-  color: var(--on-primary, #00344d); background: var(--primary); border-radius: 8px; padding: 2px 7px; }
+.cruise-pill { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  color: var(--on-primary, #00344d); background: var(--primary); border-radius: 8px; padding: 2px 7px; margin-bottom: 2px; }
+.cruise-detail { padding: 0 0 12px 34px; }
+.cruise-fact { font-size: 13px; color: var(--on-surface-variant); margin-bottom: 8px; }
+.cruise-itin-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 4px; }
+.cruise-stop { display: flex; gap: 10px; font-size: 13px; padding: 3px 0; color: var(--on-surface-variant); }
+.cruise-stop-date { min-width: 52px; color: var(--outline); }
+.cruise-stop.here { color: var(--on-surface); font-weight: 700; }
+.cruise-stop.here .cruise-stop-date { color: var(--tertiary); }
 .cruise-note { font-size: 11px; color: var(--outline); padding: 8px 0 4px; line-height: 1.4; }
 
 .sun-card {
@@ -813,6 +825,7 @@ const state = {
   expandedAlerts: new Set(),
   expandedForecast: new Set(),
   beachOpen: false,
+  cruiseOpen: new Set(),   // ids of expanded cruise rows
   sunsetQuality: null,
   loadGen: 0,
   searchTimer: null,
@@ -1600,9 +1613,39 @@ function sunArcSVG(sunriseISO, sunsetISO, now) {
 /* ═══════════════════════════════
    RENDER: HOME
 ═══════════════════════════════ */
+// "07:00" -> "7 AM", "13:30" -> "1:30 PM"
+function cruiseClock(hhmm) {
+  const [hh, mm] = hhmm.split(':').map(Number);
+  return `${hh % 12 || 12}${mm ? ':' + String(mm).padStart(2, '0') : ''} ${hh < 12 ? 'AM' : 'PM'}`;
+}
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const cruiseShortDate = iso => `${MONTH_ABBR[+iso.slice(5, 7) - 1]} ${+iso.slice(8, 10)}`;
+const cruiseThousands = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+function cruiseDetailHTML(c, ship, id) {
+  let html = '';
+  if (ship?.passengers) html += `<div class="cruise-fact">Up to ${cruiseThousands(ship.passengers)} passengers (double occupancy)</div>`;
+  if (c.itinerary?.length) {
+    html += '<div class="cruise-itin-title">Ports of call on this cruise</div>' + c.itinerary.map(st => {
+      const here = st.port.startsWith('Newport');
+      return `<div class="cruise-stop${here ? ' here' : ''}"><span class="cruise-stop-date">${st.date ? cruiseShortDate(st.date) : ''}</span><span>${escHtml(st.port)}</span></div>`;
+    }).join('');
+  }
+  return html;
+}
+
+function toggleCruise(id) {
+  const open = state.cruiseOpen.has(id) ? (state.cruiseOpen.delete(id), false) : (state.cruiseOpen.add(id), true);
+  const body = document.getElementById('cruise-body-' + id);
+  const chev = document.getElementById('cruise-chev-' + id);
+  if (body) body.style.display = open ? 'block' : 'none';
+  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+  document.getElementById('cruise-row-' + id)?.setAttribute('aria-expanded', String(open));
+}
+
 // Ships calling at Newport today and over the next few days. `now` is the wall-clock time at the
-// location (Newport and everything within CRUISE_MAX_MI of it share a time zone). The schedule
-// has dates and ship names only. Empty string = no card.
+// location (Newport and everything within CRUISE_MAX_MI of it share a time zone). Each row expands
+// to show passengers and the cruise's ports of call where known. Empty string = no card.
 function buildCruiseHTML(cruise, now) {
   if (!cruise) return '';
   const today = dateStr(now, '-');
@@ -1619,13 +1662,29 @@ function buildCruiseHTML(cruise, now) {
       const label = c.date === today ? 'Today' : c.date === tomorrow ? 'Tomorrow' : DAYS_FULL[d.getDay()];
       html += `<div class="cruise-day">${label} · ${d.getMonth() + 1}/${d.getDate()}</div>`;
     }
-    html += `<div class="cruise-row${c.cancelled ? ' cancelled' : ''}">
-      ${msym('directions_boat')}
-      <div class="cruise-main"><div class="cruise-ship">${escHtml(c.ship)}</div></div>
-      ${c.cancelled ? '<div class="cruise-times dim">Cancelled</div>' : c.date === today ? '<div class="cruise-pill">In port today</div>' : ''}
+    const ship = cruise.ships?.[c.ship];
+    const id = (c.date + '-' + c.ship).replace(/[^A-Za-z0-9]+/g, '-');
+    const detail = c.cancelled ? '' : cruiseDetailHTML(c, ship, id);
+    const open = detail && state.cruiseOpen.has(id);
+    const times = c.arrive && c.depart ? `${cruiseClock(c.arrive)} – ${cruiseClock(c.depart)}`
+      : c.depart ? `Leaves ${cruiseClock(c.depart)}` : c.arrive ? `Arrives ${cruiseClock(c.arrive)}` : '';
+    const side = c.cancelled ? '<div class="cruise-times dim">Cancelled</div>'
+      : `${c.date === today ? '<div class="cruise-pill">In port today</div>' : ''}${times ? `<div class="cruise-times">${times}</div>` : ''}`;
+    const attrs = detail ? ` role="button" tabindex="0" aria-expanded="${open}" aria-controls="cruise-body-${id}" onclick="toggleCruise('${id}')"` : '';
+    html += `<div class="cruise-item">
+      <div class="cruise-row${c.cancelled ? ' cancelled' : ''}${detail ? ' expandable' : ''}" id="cruise-row-${id}"${attrs}>
+        ${msym('directions_boat')}
+        <div class="cruise-main">
+          <div class="cruise-ship">${escHtml(c.ship)}</div>
+          ${ship?.line ? `<div class="cruise-line">${escHtml(ship.line)}</div>` : ''}
+        </div>
+        <div class="cruise-side">${side}</div>
+        ${detail ? `<span class="msym cruise-chev" id="cruise-chev-${id}" aria-hidden="true" style="${open ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
+      </div>
+      ${detail ? `<div class="cruise-detail" id="cruise-body-${id}" style="display:${open ? 'block' : 'none'}">${detail}</div>` : ''}
     </div>`;
   }
-  const [uy, um, ud] = cruise.updated.split('-').map(Number);
+  const md = iso => { const [, m, d] = iso.split('-').map(Number); return `${m}/${d}`; };
   return `
     <div class="section-heading-row">
       <div class="section-heading" style="margin:0">Cruise Ships</div>
@@ -1633,7 +1692,7 @@ function buildCruiseHTML(cruise, now) {
     </div>
     <div class="cruise-card">
       ${html}
-      <div class="cruise-note">Perrotti Park schedule from the Newport Harbormaster, as of ${um}/${ud}. Subject to change; times aren't published, and small ships docking at Fort Adams aren't included.</div>
+      <div class="cruise-note">Dates from the Newport Harbormaster's Perrotti Park schedule (as of ${md(cruise.updated)}); lines, passengers, itineraries and times from cruise line and travel agent listings${cruise.itinerariesUpdated ? ` (as of ${md(cruise.itinerariesUpdated)})` : ''}. All subject to change. Small ships docking at Fort Adams aren't included.</div>
     </div>`;
 }
 

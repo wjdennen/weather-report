@@ -417,6 +417,8 @@ struct ForecastView: View {
 
 struct CruiseView: View {
     let w: AppWeather
+    @State private var open: Set<String> = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let days = w.cruiseDays
@@ -427,39 +429,112 @@ struct CruiseView: View {
                     .foregroundStyle(Color(red: 1, green: 0.76, blue: 0.46))
                     .padding(.top, day.id == days.first?.id ? 0 : 10)
                     .accessibilityAddTraits(.isHeader)
-                ForEach(day.calls) { call in
-                    let cancelled = call.cancelled ?? false
-                    HStack(spacing: 12) {
-                        Image(systemName: "ferry.fill")
-                            .foregroundStyle(cancelled ? .white.opacity(0.4) : Color(red: 0.56, green: 0.84, blue: 1))
-                            .accessibilityHidden(true)
-                        Text(call.ship).font(.headline)
-                            .strikethrough(cancelled)
-                            .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
-                        Spacer(minLength: 8)
-                        if cancelled {
-                            Text("Cancelled").font(.footnote).foregroundStyle(.white.opacity(0.55))
-                        } else if day.isToday {
-                            Text("IN PORT TODAY").font(.caption2.weight(.bold)).tracking(0.6)
-                                .padding(.horizontal, 8).padding(.vertical, 3)
-                                .background(Color(red: 0.56, green: 0.84, blue: 1).opacity(0.25), in: Capsule())
-                        }
-                    }
-                    .padding(.vertical, 5)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(call.ship)\(cancelled ? ", cancelled" : day.isToday ? ", in port today" : "")")
-                }
+                ForEach(day.calls) { call in row(call, isToday: day.isToday) }
             }
-            Text("Perrotti Park schedule from the Newport Harbormaster, as of \(updatedText). Subject to change; times aren't published, and small ships docking at Fort Adams aren't included.")
+            Text(footnote)
                 .font(.caption).foregroundStyle(.white.opacity(0.6)).padding(.top, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .glass()
     }
 
-    // "2026-09-24" -> "9/24"
-    var updatedText: String {
-        let p = (w.cruise?.updated ?? "").split(separator: "-").compactMap { Int($0) }
-        return p.count == 3 ? "\(p[1])/\(p[2])" : "recently"
+    @ViewBuilder func row(_ call: CruiseCall, isToday: Bool) -> some View {
+        let cancelled = call.cancelled ?? false
+        let ship = w.cruise?.ships?[call.ship]
+        let hasDetail = !cancelled && (ship != nil || !(call.itinerary ?? []).isEmpty)
+        let expanded = open.contains(call.id)
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                guard hasDetail else { return }
+                if reduceMotion { toggle(call.id) } else { withAnimation(.easeInOut(duration: 0.2)) { toggle(call.id) } }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "ferry.fill")
+                        .foregroundStyle(cancelled ? .white.opacity(0.4) : Color(red: 0.56, green: 0.84, blue: 1))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(call.ship).font(.headline)
+                            .strikethrough(cancelled)
+                            .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
+                        if let line = ship?.line { Text(line).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
+                    }
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        if cancelled {
+                            Text("Cancelled").font(.footnote).foregroundStyle(.white.opacity(0.55))
+                        } else {
+                            if isToday {
+                                Text("IN PORT TODAY").font(.caption2.weight(.bold)).tracking(0.6)
+                                    .padding(.horizontal, 8).padding(.vertical, 3)
+                                    .background(Color(red: 0.56, green: 0.84, blue: 1).opacity(0.25), in: Capsule())
+                            }
+                            if let t = times(call) { Text(t).font(.footnote.weight(.semibold)).foregroundStyle(Color(red: 0.56, green: 0.84, blue: 1)) }
+                        }
+                    }
+                    if hasDetail {
+                        Image(systemName: "chevron.down").font(.footnote).foregroundStyle(.white.opacity(0.7))
+                            .rotationEffect(.degrees(expanded ? 180 : 0)).accessibilityHidden(true)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!hasDetail)
+            .accessibilityLabel("\(call.ship)\(ship.map { ", \($0.line)" } ?? "")\(cancelled ? ", cancelled" : isToday ? ", in port today" : "")")
+            .accessibilityHint(hasDetail ? (expanded ? "Hide details" : "Show passengers and ports of call") : "")
+
+            if expanded, hasDetail { detail(call, ship) }
+        }
+        .padding(.vertical, 5)
+    }
+
+    func detail(_ call: CruiseCall, _ ship: CruiseShip?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let ship {
+                Text("Up to \(ship.passengers.formatted()) passengers (double occupancy)")
+                    .font(.subheadline).foregroundStyle(.white.opacity(0.85))
+            }
+            if let stops = call.itinerary, !stops.isEmpty {
+                Text("PORTS OF CALL ON THIS CRUISE").font(.caption2.weight(.bold)).tracking(0.8)
+                    .foregroundStyle(.white.opacity(0.6)).padding(.top, 2)
+                ForEach(stops) { stop in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(stop.date.map(CruiseSchedules.shortDate) ?? "")
+                            .font(.footnote).monospacedDigit()
+                            .foregroundStyle(stop.isNewport ? Color(red: 1, green: 0.76, blue: 0.46) : .white.opacity(0.5))
+                            .frame(width: 54, alignment: .leading)
+                        Text(stop.port).font(.subheadline.weight(stop.isNewport ? .bold : .regular))
+                            .foregroundStyle(stop.isNewport ? .white : .white.opacity(0.8))
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(stop.date.map(CruiseSchedules.shortDate).map { $0 + ", " } ?? "")\(stop.port)\(stop.isNewport ? ", this stop" : "")")
+                }
+            }
+        }
+        .padding(.leading, 34)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    func toggle(_ id: String) {
+        if open.contains(id) { open.remove(id) } else { open.insert(id) }
+    }
+
+    func times(_ call: CruiseCall) -> String? {
+        switch (call.arrive, call.depart) {
+        case let (a?, d?): "\(CruiseSchedules.clock(a)) – \(CruiseSchedules.clock(d))"
+        case let (nil, d?): "Leaves \(CruiseSchedules.clock(d))"
+        case let (a?, nil): "Arrives \(CruiseSchedules.clock(a))"
+        default: nil
+        }
+    }
+
+    var footnote: String {
+        func md(_ iso: String?) -> String {
+            let p = (iso ?? "").split(separator: "-").compactMap { Int($0) }
+            return p.count == 3 ? "\(p[1])/\(p[2])" : "recently"
+        }
+        var s = "Dates from the Newport Harbormaster's Perrotti Park schedule (as of \(md(w.cruise?.updated))); lines, passengers, itineraries and times from cruise line and travel agent listings"
+        if let u = w.cruise?.itinerariesUpdated { s += " (as of \(md(u)))" }
+        return s + ". All subject to change. Small ships docking at Fort Adams aren't included."
     }
 }

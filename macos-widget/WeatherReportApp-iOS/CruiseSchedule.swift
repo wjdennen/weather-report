@@ -5,16 +5,36 @@ import Foundation
 // app; when the phone is online the site's copy is used instead if it's newer, so the card stays current
 // between app reinstalls. Dates and ship names only (the source has no times).
 
+struct CruiseStop: Decodable, Identifiable {
+    let port: String
+    let date: String?         // yyyy-MM-dd
+    var id: String { port + (date ?? "") }
+    var isNewport: Bool { port.hasPrefix("Newport") }
+}
+
 struct CruiseCall: Decodable, Identifiable {
     let date: String          // yyyy-MM-dd, Newport local
     let ship: String
     let cancelled: Bool?
+    let arrive: String?       // "HH:mm" at Newport, when a cruise listing gave it
+    let depart: String?
+    let itinerary: [CruiseStop]?
     var id: String { date + ship }
 }
 
+struct CruiseShip: Decodable {
+    let line: String
+    let passengers: Int       // double occupancy
+}
+
 struct CruiseSchedule: Decodable {
-    let updated: String       // yyyy-MM-dd of the source PDF
+    let updated: String                    // yyyy-MM-dd of the source PDF
+    let itinerariesUpdated: String?        // yyyy-MM-dd lines/itineraries were compiled
+    let ships: [String: CruiseShip]?
     let calls: [CruiseCall]
+
+    // Sorts newer data later: the schedule PDF's date, then when the lines/itineraries were compiled.
+    var version: String { updated + "|" + (itinerariesUpdated ?? "") }
 }
 
 struct CruiseDay: Identifiable {
@@ -44,10 +64,25 @@ enum CruiseSchedules {
         if let (data, resp) = try? await URLSession.shared.data(for: request),
            (resp as? HTTPURLResponse)?.statusCode == 200,
            let live = try? JSONDecoder().decode(CruiseSchedule.self, from: data),
-           live.updated >= (bundled?.updated ?? "") {
+           live.version >= (bundled?.version ?? "") {
             return live
         }
         return bundled
+    }
+
+    // Newport-local "HH:mm" -> "7 AM" / "1:30 PM" (no time zone maths: it's a clock reading at the port)
+    static func clock(_ hhmm: String) -> String {
+        let p = hhmm.split(separator: ":").compactMap { Int($0) }
+        guard p.count == 2 else { return hhmm }
+        return "\(p[0] % 12 == 0 ? 12 : p[0] % 12)\(p[1] == 0 ? "" : String(format: ":%02d", p[1])) \(p[0] < 12 ? "AM" : "PM")"
+    }
+
+    // "2026-10-11" -> "Oct 11"
+    static func shortDate(_ iso: String) -> String {
+        let p = iso.split(separator: "-").compactMap { Int($0) }
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        guard p.count == 3, (1...12).contains(p[1]) else { return iso }
+        return "\(months[p[1] - 1]) \(p[2])"
     }
 }
 
