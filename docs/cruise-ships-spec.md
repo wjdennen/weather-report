@@ -14,7 +14,13 @@ Within 20 miles of Newport (`CRUISE_PORT` / `CRUISE_MAX_MI` in `public/index.htm
 
 ## Lines, passengers and itineraries
 
-Hand-compiled on 2026-10-07 from cruise line and travel agent sailing listings (Princess, Silversea, Norwegian, Ponant, Seabourn and others via agent pages). Stored in the same JSON: a `ships` table (`line`, `passengers`) and an optional `itinerary` per call. 19 of the 23 upcoming calls have one; four (Silver Shadow 10/12, Seabourn Ovation 10/18, Victory II 10/23, Viking Mars 10/24) don't. A few itineraries list ports in order without a date for every stop. Sources disagreed in places (e.g. Seabourn Ovation's Oct 22 stop was Rockland in one listing and Bar Harbor in another), so treat details as indicative. Itineraries are per sailing, so they must be redone each season.
+Hand-compiled on 2026-10-07 from cruise line voyage pages (Victory, Silversea, Seabourn via agent mirrors, Princess, Norwegian, Ponant, AIDA) and travel agent listings (cruisekings, icruise, jetsetterguide and similar). Stored in the same JSON: a `ships` table (`line`, `passengers`) and an optional `itinerary` per call, with dates and (where the listing had them) port times. 22 of the 23 upcoming calls have an itinerary; Viking Mars on 10/24 doesn't. Sources that block automated fetches (403/410) and sites that disallow Claude in robots.txt (CruiseTimetables) were skipped, and CruiseMapper is excluded by its terms. Where listings disagreed I used the more specific, internally consistent one (Seabourn Ovation's Oct 22 stop is Rockland per two listings; Viking Mars's Oct 15 stop is Eastport per two listings vs Bar Harbor in one summary).
+
+Known doubts:
+- **Viking Mars 10/24** (in the Harbormaster PDF): the ship is in Fort Lauderdale on 10/20 and then on a Panama Canal cruise, so there's no matching sailing. The entry may be a typo for another ship or date.
+- **Silver Shadow 11/2**: the PDF says Mon 11/2, but the cruise line's itinerary (Montreal 10/24 to Bayonne 11/4, Boston the day before Newport) puts Newport on 11/3. The itinerary shows 11/3; re-check when it's closer.
+- **Le Lyrial 10/16**: the dated itinerary came from a page labelled 2027 whose dates match the 2026 Newport/New York dates in the PDF; the other stops' dates are plausible but less certain.
+- Itineraries are per sailing, so they must be redone each season.
 
 ## Why not CruiseMapper
 
