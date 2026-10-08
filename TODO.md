@@ -16,6 +16,12 @@
 - **Cruise card: automate the freshness check** — `scripts/check-cruise.sh` is manual; could run weekly as a GitHub Action that opens an issue when a newer schedule PDF is posted.
 - **Cruise card: check the Harbormaster list against the cruise lines** — as of 10/7/26, Viking Mars on 10/24 has no matching sailing (the ship is at Fort Lauderdale on 10/20 and then on a Panama Canal cruise), so that entry in the PDF may be an error; and Silver Shadow's cruise line schedule has Newport on Tue 11/3 while the PDF says Mon 11/2. Re-check both as they approach. Itineraries are hand-compiled per season, so redo them for the 2027 season when the Harbormaster publishes it.
 - **Cruise card: widgets** — the card is in the web and iPhone apps; the iOS and macOS widgets don't show cruise ships (little room; could be a line on the large widget).
+- **Notifications (shelved 2026-10-07; personal use only)** — no per-user backend, subscriptions or VAPID needed. Plan in order:
+  1. *iOS local notifications for ships* — the app already bundles the cruise schedule, so queue "ship in port tomorrow" (evening before) or "in port today" (7 AM) locally; opt-in toggle; re-queue whenever the schedule refreshes. No server.
+  2. *Worker cron + ntfy.sh (or Pushover, ~$5 one-time)* — scheduled Worker, with the user's locations in config, checks NWS alerts (Warnings/Watches, not Advisories) and, once an evening, sunset quality (notify above a threshold, e.g. 70+) and POSTs to a private ntfy topic. Remember what was already sent to avoid repeats. Skips APNs, Apple push keys and web push (iOS web push only works for home-screen-installed PWAs).
+  3. *Later, only if ntfy/Pushover isn't enough* — native APNs or web push.
+  Open choices: ntfy vs Pushover (leaning ntfy), which places and alert types, sunset score threshold.
+- **Other ideas (2026-10-07)** — *Cheap:* water temperature on the Tides card (NOAA stations already queried); marine/surf and rip-current risk from Open-Meteo Marine (wave height/period/swell), tied into the beach pick; coastal flooding / storm surge ("running 1.2 ft above forecast"). *Interesting:* aurora alert from NOAA Kp with a "visible from here?" flag; stargazing score from cloud cover + moon phase (ISS passes as a bonus); fog likelihood from visibility and dew-point spread. *Newport-local:* bridge wind closures; RI DEM beach water-quality closures feeding the beach pick; "ship in port, expect crowds" nudge. *App:* two-location compare view; shareable `?loc=` links.
 
 ## Done
 
