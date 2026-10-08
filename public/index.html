@@ -100,6 +100,10 @@ html, body {
   transition: background 0.2s;
 }
 .nav-add-btn:hover { background: rgba(142,213,255,0.2); }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.nav-refresh-btn[hidden] { display: none; }
+.nav-refresh-btn:disabled { cursor: progress; }
+.nav-refresh-btn.spinning .msym { animation: ptr-spin 0.8s linear infinite; }
 
 /* ── Screens ── */
 .screens { flex: 1; overflow: hidden; position: relative; }
@@ -744,9 +748,14 @@ html, body {
       <span class="msym" id="nav-pin" aria-hidden="true">location_on</span>
       <span class="location-name" id="nav-location">Weather Report</span>
     </div>
-    <button class="nav-add-btn" onclick="App.goSearch()" title="Search locations" aria-label="Search locations">
-      <span class="msym" aria-hidden="true">add</span>
-    </button>
+    <div class="nav-actions">
+      <button class="nav-add-btn nav-refresh-btn" id="nav-refresh" hidden onclick="App.refresh()" title="Refresh (R)" aria-label="Refresh weather">
+        <span class="msym" aria-hidden="true">refresh</span>
+      </button>
+      <button class="nav-add-btn" onclick="App.goSearch()" title="Search locations" aria-label="Search locations">
+        <span class="msym" aria-hidden="true">add</span>
+      </button>
+    </div>
   </header>
 
   <!-- Screens -->
@@ -825,6 +834,7 @@ const state = {
   expandedAlerts: new Set(),
   expandedForecast: new Set(),
   beachOpen: false,
+  refreshing: false,
   cruiseOpen: new Set(),   // ids of expanded cruise rows
   sunsetQuality: null,
   loadGen: 0,
@@ -1250,9 +1260,9 @@ const CRUISE_PORT = [41.4901, -71.3128];
 const CRUISE_MAX_MI = 20;
 const CRUISE_DAYS = 5;                 // today plus the next four
 const nearCruisePort = (lat, lon) => lat != null && haversine(lat, lon, CRUISE_PORT[0], CRUISE_PORT[1]) <= CRUISE_MAX_MI;
-async function fetchCruise() {
+async function fetchCruise(fresh = false) {
   try {
-    const r = await fetch('/cruise-newport.json');
+    const r = await fetch('/cruise-newport.json', fresh ? { cache: 'reload' } : undefined);
     if (!r.ok) return null;
     const d = await r.json();
     return Array.isArray(d.calls) ? d : null;
@@ -1270,7 +1280,7 @@ async function fetchSunsetQuality(lat, lon, date) {
   } catch { return null; }
 }
 
-async function loadLocation(lat, lon, name, isGeo = false) {
+async function loadLocation(lat, lon, name, isGeo = false, fresh = false) {
   // Each call gets its own generation number; background callbacks below check it's
   // still current before touching `state`, so a slower fetch for a location the user
   // has since navigated away from can't clobber the newer one's data.
@@ -1292,6 +1302,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
   state.sunsetQuality = null;
   state.cruise = null;
 
+  syncRefreshBtn();
   document.getElementById('nav-location').textContent = name;
   document.getElementById('nav-pin').textContent = isGeo ? 'my_location' : 'location_on';
   document.getElementById('app').style.background = '';
@@ -1315,7 +1326,7 @@ async function loadLocation(lat, lon, name, isGeo = false) {
     });
 
     if (nearCruisePort(lat, lon)) {
-      fetchCruise().then(c => {
+      fetchCruise(fresh).then(c => {
         if (!stillCurrent() || !c) return;
         state.cruise = c;
         if (state.tab === 'home') renderHome();
@@ -2099,6 +2110,15 @@ function renderHome() {
   if (radarCanvas && state.lat != null) initRadar(radarCanvas, state.lat, state.lon);
 }
 
+// Header refresh button: only on the Home tab once a location is loaded; spins while loading.
+function syncRefreshBtn() {
+  const b = document.getElementById('nav-refresh');
+  if (!b) return;
+  b.hidden = !(state.tab === 'home' && state.lat != null);
+  b.disabled = !!state.refreshing;
+  b.classList.toggle('spinning', !!state.refreshing);
+}
+
 function renderHomeError(msg) {
   document.getElementById('screen-home').innerHTML = `
     <div class="error-banner" role="alert">${msym('error')} <span>${escHtml(msg || 'Could not load weather. Check your connection.')}</span></div>
@@ -2334,6 +2354,7 @@ const App = {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${tab}`));
     if (tab === 'search') renderSearch();
     else if (tab === 'home') renderHome();
+    syncRefreshBtn();
   },
 
   goSearch() { App.switchTab('search'); },
@@ -2495,6 +2516,16 @@ const App = {
     }, 350);
   },
 
+  // Reload everything for the current location, bypassing the HTTP/service-worker caches for
+  // the cruise schedule. Shared by the header button, the R shortcut and pull-to-refresh.
+  async refresh() {
+    if (state.lat == null || state.refreshing) return;
+    state.refreshing = true;
+    syncRefreshBtn();
+    try { await loadLocation(state.lat, state.lon, state.name, state.isGeo, true); }
+    finally { state.refreshing = false; syncRefreshBtn(); }
+  },
+
   retry() {
     if (state.lat != null) loadLocation(state.lat, state.lon, state.name, state.isGeo);
     else App.useGeo();
@@ -2521,6 +2552,15 @@ if ('serviceWorker' in navigator) {
     App.useGeo();
   }
 })();
+
+// R refreshes (desktop), unless typing in a field or using a modifier
+document.addEventListener('keydown', e => {
+  if (e.key !== 'r' && e.key !== 'R') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+  if (state.tab === 'home') App.refresh();
+});
 
 // Keyboard activation for non-<button> controls marked role="button"
 document.addEventListener('keydown', e => {
@@ -2582,7 +2622,7 @@ document.addEventListener('keydown', e => {
       bar.style.height = '52px';
       icon.style.transform = '';
       label.textContent = 'Updating…';
-      loadLocation(state.lat, state.lon, state.name, state.isGeo).finally(() => {
+      App.refresh().finally(() => {
         bar.classList.remove('ptr-loading');
         reset(true);
       });
