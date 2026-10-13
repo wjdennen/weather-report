@@ -444,7 +444,7 @@ struct CruiseView: View {
     @ViewBuilder func row(_ call: CruiseCall, isToday: Bool) -> some View {
         let cancelled = call.cancelled ?? false
         let ship = w.cruise?.ships?[call.ship]
-        let hasDetail = !cancelled && (ship != nil || !(call.itinerary ?? []).isEmpty)
+        let hasDetail = !cancelled && (ship?.passengers != nil || !(call.itinerary ?? []).isEmpty)
         let expanded = open.contains(call.id)
         VStack(alignment: .leading, spacing: 8) {
             Button {
@@ -489,7 +489,8 @@ struct CruiseView: View {
             Text(call.ship).font(.headline)
                 .strikethrough(cancelled)
                 .foregroundStyle(cancelled ? .white.opacity(0.5) : .white)
-            if let line = ship?.line { Text(line).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
+            let line = [ship?.line, call.dock].compactMap { $0 }.joined(separator: " · ")
+            if !line.isEmpty { Text(line).font(.footnote).foregroundStyle(.white.opacity(0.7)) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -514,8 +515,8 @@ struct CruiseView: View {
 
     func detail(_ call: CruiseCall, _ ship: CruiseShip?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let ship {
-                Text("Up to \(ship.passengers.formatted()) passengers")
+            if let passengers = ship?.passengers {
+                Text("Up to \(passengers.formatted()) passengers")
                     .font(.subheadline).foregroundStyle(.white.opacity(0.85))
             }
             if let stops = call.itinerary, !stops.isEmpty {
@@ -564,6 +565,6 @@ struct CruiseView: View {
         }
         var s = "Dates from the Newport Harbormaster's Perrotti Park schedule (as of \(md(w.cruise?.updated))); lines, passengers, itineraries and times from cruise line and travel agent listings"
         if let u = w.cruise?.itinerariesUpdated { s += " (as of \(md(u)))" }
-        return s + ". All subject to change. Small ships docking at Fort Adams aren't included."
+        return s + ". All subject to change. Small ships at Fort Adams (marked) have no published schedule, so those calls are added from listings and may be incomplete."
     }
 }

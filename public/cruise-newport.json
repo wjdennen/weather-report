@@ -4,7 +4,7 @@
  "sourcePage": "https://www.discovernewport.org/industry/cruise-ship-schedule/",
  "pdfUrl": "https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/newportri/cruise_ship_schedules_9_24_26_perrotti_51b5e166-edd7-434b-9a4f-9d237928d4b1.pdf",
  "updated": "2026-09-24",
- "itinerariesUpdated": "2026-10-07",
+ "itinerariesUpdated": "2026-10-13",
  "ships": {
   "AIDAdiva": {
    "line": "AIDA Cruises",
@@ -61,6 +61,12 @@
   "Sapphire Princess": {
    "line": "Princess Cruises",
    "passengers": 2670
+  },
+  "American Star": {
+   "line": "American Cruise Lines"
+  },
+  "American Pioneer": {
+   "line": "American Cruise Lines"
   }
  },
  "calls": [
@@ -495,6 +501,11 @@
    ]
   },
   {
+   "date": "2026-10-13",
+   "ship": "American Star",
+   "dock": "Fort Adams"
+  },
+  {
    "date": "2026-10-14",
    "ship": "Silver Shadow",
    "arrive": "08:30",
@@ -923,6 +934,11 @@
      "arrive": "07:00"
     }
    ]
+  },
+  {
+   "date": "2026-10-20",
+   "ship": "American Pioneer",
+   "dock": "Fort Adams"
   },
   {
    "date": "2026-10-23",

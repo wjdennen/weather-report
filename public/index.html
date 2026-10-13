@@ -1688,7 +1688,7 @@ function buildCruiseHTML(cruise, now) {
         ${msym('directions_boat')}
         <div class="cruise-main">
           <div class="cruise-ship">${escHtml(c.ship)}</div>
-          ${ship?.line ? `<div class="cruise-line">${escHtml(ship.line)}</div>` : ''}
+          ${(ship?.line || c.dock) ? `<div class="cruise-line">${escHtml([ship?.line, c.dock].filter(Boolean).join(' · '))}</div>` : ''}
         </div>
         <div class="cruise-side">${side}</div>
         ${detail ? `<span class="msym cruise-chev" id="cruise-chev-${id}" aria-hidden="true" style="${open ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
@@ -1704,7 +1704,7 @@ function buildCruiseHTML(cruise, now) {
     </div>
     <div class="cruise-card">
       ${html}
-      <div class="cruise-note">Dates from the Newport Harbormaster's Perrotti Park schedule (as of ${md(cruise.updated)}); lines, passengers, itineraries and times from cruise line and travel agent listings${cruise.itinerariesUpdated ? ` (as of ${md(cruise.itinerariesUpdated)})` : ''}. All subject to change. Small ships docking at Fort Adams aren't included.</div>
+      <div class="cruise-note">Dates from the Newport Harbormaster's Perrotti Park schedule (as of ${md(cruise.updated)}); lines, passengers, itineraries and times from cruise line and travel agent listings${cruise.itinerariesUpdated ? ` (as of ${md(cruise.itinerariesUpdated)})` : ''}. All subject to change. Small ships at Fort Adams (marked) have no published schedule, so those calls are added from listings and may be incomplete.</div>
     </div>`;
 }
 

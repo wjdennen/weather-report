@@ -16,6 +16,7 @@ struct CruiseCall: Decodable, Identifiable {
     let date: String          // yyyy-MM-dd, Newport local
     let ship: String
     let cancelled: Bool?
+    let dock: String?         // set for small ships at Fort Adams (not on the Perrotti Park schedule)
     let arrive: String?       // "HH:mm" at Newport, when a cruise listing gave it
     let depart: String?
     let itinerary: [CruiseStop]?
@@ -24,7 +25,7 @@ struct CruiseCall: Decodable, Identifiable {
 
 struct CruiseShip: Decodable {
     let line: String
-    let passengers: Int       // double occupancy
+    let passengers: Int?      // double occupancy; unknown for some small ships
 }
 
 struct CruiseSchedule: Decodable {

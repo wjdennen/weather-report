@@ -42,7 +42,7 @@ If they say yes, the removed Worker scraper design (edge cache, stale fallback, 
 ## Known limits
 
 - The official schedule has dates and ship names only; times, lines, capacities and itineraries are hand-compiled from other listings and may be wrong or incomplete.
-- Perrotti Park only. The Fort Adams (South Alofsin Pier) schedule hadn't been released; those small ships (e.g. American Cruise Lines) are missing.
+- Fort Adams (South Alofsin Pier) small ships have no published schedule. As of 2026-10-13 the user added the American Cruise Lines calls they found on CruiseMapper (American Star 10/13, American Pioneer 10/20, a one-off check, since CruiseMapper's permission is still pending; don't scrape it). They carry `"dock": "Fort Adams"`, have no times, passengers or itinerary, and show "line · Fort Adams" on the row. Add more by hand as they turn up; the Harbormaster's list is still Perrotti Park only.
 - Snapshot goes stale until re-imported; ships also change plans after publication.
 - I did not find Discover Newport terms of use; `robots.txt` allows crawling (2 s delay) and the PDF credits the Harbormaster. The data is a public schedule shown with credit.
 - Newport is hard-wired (web and iPhone constants must match: 41.4901, -71.3128, 20 miles, 5 days); other ports would need their own file and radius.
