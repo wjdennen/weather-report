@@ -1362,6 +1362,8 @@
   {
    "date": "2026-11-02",
    "ship": "Silver Shadow",
+   "arrive": "08:00",
+   "depart": "17:00",
    "itinerary": [
     {
      "port": "Montreal, QC",

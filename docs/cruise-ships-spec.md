@@ -18,7 +18,7 @@ Hand-compiled on 2026-10-07 from cruise line voyage pages (Victory, Silversea, S
 
 Known doubts:
 - **Viking Mars 10/24** (in the Harbormaster PDF): the ship is in Fort Lauderdale on 10/20 and then on a Panama Canal cruise, so there's no matching sailing. The entry may be a typo for another ship or date.
-- **Silver Shadow 11/2**: the PDF says Mon 11/2, but the cruise line's itinerary (Montreal 10/24 to Bayonne 11/4, Boston the day before Newport) puts Newport on 11/3. The itinerary shows 11/3; re-check when it's closer.
+- **Silver Shadow 11/2**: the PDF and (per a 2026-10-13 one-off look) CruiseMapper both say Mon 11/2, 8 AM–5 PM, but the cruise line's itinerary (Montreal 10/24 to Bayonne 11/4, Boston the day before Newport) puts Newport on 11/3. The itinerary shows 11/3; re-check when it's closer.
 - **Le Lyrial 10/16**: the dated itinerary came from a page labelled 2027 whose dates match the 2026 Newport/New York dates in the PDF; the other stops' dates are plausible but less certain.
 - Itineraries are per sailing, so they must be redone each season.
 
