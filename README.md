@@ -59,6 +59,27 @@ To change location, tap the location name or the `+` button in the top bar.
 | Base map tiles | [ESRI](https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer) World Dark Gray (free, no key) |
 | Tide station list | Bundled `public/stations.json` (~3,450 NOAA stations) |
 
+## License and credits
+
+The code in this repository is released under the [MIT License](LICENSE). The license covers the code only, not the third-party data or services below, which have their own terms. In particular, several sources limit use to **non-commercial** projects, so check each provider's current terms before using this app commercially.
+
+| Source | License / terms |
+|--------|-----------------|
+| [Open-Meteo](https://open-meteo.com/) (weather, geocoding) | Data CC BY 4.0, free for non-commercial use only; attribution required |
+| [NOAA CO-OPS](https://tidesandcurrents.noaa.gov/) and [NWS](https://api.weather.gov/) | US government works, public domain; NWS requires a descriptive `User-Agent` |
+| [RainViewer](https://www.rainviewer.com/api.html) | Free public API with attribution; non-commercial, limited zoom and frames |
+| [ESRI World Dark Gray Base](https://www.arcgis.com/home/item.html?id=a284a9b99b3446a3910d4f51a3b5b7cf) | Esri basemap terms; attribution: Esri, HERE, Garmin, OpenStreetMap contributors |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL; beach facing directions derived from its coastline data. © OpenStreetMap contributors |
+| [Sunsethue](https://sunsethue.com/dev-api) | Keyed API under Sunsethue's terms |
+| [Zippopotam.us](https://api.zippopotam.us/), [BigDataCloud](https://www.bigdatacloud.com/) | Free endpoints; BigDataCloud's client endpoint is for non-commercial use |
+| [Discover Newport](https://www.discovernewport.org/industry/cruise-ship-schedule/) / Newport Harbormaster | Public schedule, transcribed by hand with credit; no license granted |
+| Cruise line and travel-agent listings | Facts compiled by hand; no scraping of sites that prohibit it (CruiseMapper is not used without written consent) |
+| [Inter](https://rsms.me/inter/) font | SIL Open Font License 1.1 |
+| [Material Symbols](https://fonts.google.com/icons) | Apache License 2.0 |
+| [Tailwind CSS](https://tailwindcss.com/) (design mockups only) | MIT |
+
+The `stitch_weather_and_tide_tracker/` folder holds design mockups generated with Google Stitch; it is not deployed and not covered by the MIT license.
+
 ## Stack
 
 - Vanilla HTML/CSS/JS — no framework, all code in `public/index.html`
