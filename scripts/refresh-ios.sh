@@ -44,6 +44,8 @@ if [ "${1:-}" != "--force" ] && [ -f "$STATE" ]; then
 fi
 
 # Is the phone reachable right now? (On Wi-Fi it must be awake and on the same network.)
+# A paired phone often lists as "available (paired)" until something opens a connection, so ask it for details first.
+xcrun devicectl device info details --device "$DEVICE" >/dev/null 2>&1
 if ! xcrun devicectl list devices 2>/dev/null | grep "$DEVICE" | grep -q connected; then
   fail "iPhone not reachable. Unlock it and join the same Wi-Fi as the Mac."
 fi
