@@ -690,6 +690,11 @@ html, body {
 }
 .geo-badge .msym { font-size: 14px; }
 
+.search-note {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 12px;
+  font-size: 14px; line-height: 1.5; color: var(--on-surface-variant);
+}
 .explore-banner {
   background: var(--glass-bg); border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 20px; text-align: center;
@@ -822,6 +827,7 @@ const state = {
   lat: null, lon: null,
   name: 'Weather Report',
   isGeo: true,
+  searchNote: null,
   weather: null,
   tides: null,
   tideStation: null,
@@ -1291,6 +1297,7 @@ async function loadLocation(lat, lon, name, isGeo = false, fresh = false) {
   state.lon = lon;
   state.name = name;
   state.isGeo = isGeo;
+  state.searchNote = null;
   if (!isGeo) localStorage.setItem('wr-last', `${lat}_${lon}`);
   state.weather = null;
   state.tides = null;
@@ -2292,6 +2299,7 @@ function renderSearch(results = []) {
 
   el.innerHTML = `
     <button class="back-btn" onclick="App.switchTab('home')" aria-label="Back to weather">${msym('arrow_back')} Back</button>
+    ${state.searchNote ? `<div class="search-note" role="status">${escHtml(state.searchNote)}</div>` : ''}
     <div class="search-bar">
       ${msym('search')}
       <input type="text" id="search-input" placeholder="Search by city or zip code" aria-label="Search by city or zip code" autocomplete="off" spellcheck="false"
@@ -2360,29 +2368,29 @@ const App = {
   goSearch() { App.switchTab('search'); },
 
   async useGeo() {
-    if (!navigator.geolocation) {
-      App.switchTab('home');
-      document.getElementById('screen-home').innerHTML = `
+    // Location is optional: when it's unavailable, land on the search tab with a note
+    // (focused input) rather than a dead-end screen. The home tab keeps a matching
+    // prompt, or the current weather if a place is already loaded, for the Back button.
+    const showGeoError = (msg) => {
+      state.searchNote = msg;
+      if (state.weather) renderHome();
+      else document.getElementById('screen-home').innerHTML = `
         <div class="geo-prompt">
-          ${msym('location_off')}
-          <h2>Location Not Supported</h2>
-          <p>Your browser doesn't support geolocation. Search for a city instead.</p>
-          <button class="btn-primary" onclick="App.goSearch()">Search Locations</button>
+          ${msym('search')}
+          <h2>Where do you want the weather?</h2>
+          <p>Location sharing is off, which is fine. Search for a city or zip code instead.</p>
+          <button class="btn-primary" onclick="App.goSearch()">Search</button>
         </div>`;
+      App.goSearch();
+      document.getElementById('search-input')?.focus();
+    };
+
+    if (!navigator.geolocation) {
+      showGeoError("Your browser can't share location. Search for a city or zip code instead.");
       return;
     }
     App.switchTab('home');
     document.getElementById('screen-home').innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Locating you…</div></div>`;
-
-    const showGeoError = (msg) => {
-      document.getElementById('screen-home').innerHTML = `
-        <div class="geo-prompt">
-          ${msym('location_off')}
-          <h2>Location Needed</h2>
-          <p>${msg}</p>
-          <button class="btn-primary" onclick="App.goSearch()">Search Locations</button>
-        </div>`;
-    };
 
     // Check permission state up-front if Permissions API is available.
     // On Chrome desktop this returns 'denied' immediately for previously-blocked
@@ -2391,7 +2399,7 @@ const App = {
       try {
         const perm = await navigator.permissions.query({ name: 'geolocation' });
         if (perm.state === 'denied') {
-          showGeoError('Location permission is blocked. Enable it in your browser settings, or search for a city instead.');
+          showGeoError('Location is turned off for this site. Search for a city or zip code instead.');
           return;
         }
       } catch(e) { /* Permissions API unsupported — continue */ }
@@ -2402,7 +2410,7 @@ const App = {
     // the OS permission prompt is dismissed without an explicit Allow/Deny tap.
     const settle = (fn) => { if (!settled) { settled = true; fn(); } };
     const fallback = setTimeout(() => settle(() =>
-      showGeoError('Location timed out. Search for a city instead.')
+      showGeoError('Location took too long. Search for a city or zip code instead.')
     ), 12000);
 
     navigator.geolocation.getCurrentPosition(async pos => {
@@ -2413,17 +2421,17 @@ const App = {
           const name = await reverseGeocode(lat, lon) || 'Current Location';
           loadLocation(lat, lon, name, true);
         } catch(e) {
-          showGeoError('Location error. Search for a city instead.');
+          showGeoError("Couldn't get your location. Search for a city or zip code instead.");
         }
       });
     }, err => {
       settle(() => {
         clearTimeout(fallback);
         const msg = err.code === 1
-          ? 'Location permission denied. Enable it in your browser settings, or search for a city instead.'
+          ? 'Location is turned off for this site. Search for a city or zip code instead.'
           : err.code === 2
-          ? 'Location unavailable. Try again later, or search for a city instead.'
-          : 'Location timed out. Search for a city instead.';
+          ? "Couldn't get your location. Search for a city or zip code instead."
+          : 'Location took too long. Search for a city or zip code instead.';
         showGeoError(msg);
       });
     }, { timeout: 10000, maximumAge: 300000 });
