@@ -940,6 +940,8 @@ async function reverseGeocode(lat, lon) {
   } catch { return null; }
 }
 
+const US_STATE_NAMES = {al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado', ct: 'Connecticut', de: 'Delaware', dc: 'District of Columbia', fl: 'Florida', ga: 'Georgia', hi: 'Hawaii', id: 'Idaho', il: 'Illinois', in: 'Indiana', ia: 'Iowa', ks: 'Kansas', ky: 'Kentucky', la: 'Louisiana', me: 'Maine', md: 'Maryland', ma: 'Massachusetts', mi: 'Michigan', mn: 'Minnesota', ms: 'Mississippi', mo: 'Missouri', mt: 'Montana', ne: 'Nebraska', nv: 'Nevada', nh: 'New Hampshire', nj: 'New Jersey', nm: 'New Mexico', ny: 'New York', nc: 'North Carolina', nd: 'North Dakota', oh: 'Ohio', ok: 'Oklahoma', or: 'Oregon', pa: 'Pennsylvania', ri: 'Rhode Island', sc: 'South Carolina', sd: 'South Dakota', tn: 'Tennessee', tx: 'Texas', ut: 'Utah', vt: 'Vermont', va: 'Virginia', wa: 'Washington', wv: 'West Virginia', wi: 'Wisconsin', wy: 'Wyoming'};
+
 async function searchGeo(query) {
   query = query.trim();
   if (!query) return [];
@@ -956,12 +958,24 @@ async function searchGeo(query) {
     } catch {}
   }
 
-  // Open-Meteo doesn't handle "City, State" — strip state suffix before querying
-  const geoQuery = query.split(',')[0].trim();
-  const r = await fetch(`${GEOCODING}?name=${encodeURIComponent(geoQuery)}&count=8&language=en&format=json`);
+  // Open-Meteo doesn't handle "City, State": search on the part before the comma, ask for plenty
+  // of results (common names like Newport have 30+ matches), then use the part after the comma
+  // to put the matching state/country first.
+  const [cityPart, ...rest] = query.split(',');
+  const hint = rest.join(',').trim().toLowerCase().replace(/\./g, '');
+  const r = await fetch(`${GEOCODING}?name=${encodeURIComponent(cityPart.trim())}&count=50&language=en&format=json`);
   if (!r.ok) return [];
   const d = await r.json();
-  return d.results || [];
+  const results = d.results || [];
+  if (!hint) return results.slice(0, 8);
+  const matches = results.filter(x => {
+    const admin = (x.admin1 || '').toLowerCase();
+    return (admin && (admin === hint || (US_STATE_NAMES[hint] || '').toLowerCase() === admin
+      || (hint.length >= 3 && admin.startsWith(hint))))
+      || (x.country_code || '').toLowerCase() === hint
+      || (x.country || '').toLowerCase().startsWith(hint);
+  });
+  return (matches.length ? matches : results).slice(0, 8);
 }
 
 async function loadStations() {

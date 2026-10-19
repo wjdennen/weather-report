@@ -287,10 +287,14 @@ enum AppService {
             }
         }
 
-        // Open-Meteo doesn't handle "City, State": search on the part before the comma.
-        let name = q.split(separator: ",").first.map { String($0).trimmingCharacters(in: .whitespaces) } ?? q
+        // Open-Meteo doesn't handle "City, State": search on the part before the comma, ask for plenty
+        // of results (common names like Newport have 30+ matches), then use the part after the comma
+        // to put the matching state/country first.
+        let parts = q.split(separator: ",", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
+        let name = parts.first ?? q
+        let hint = (parts.count > 1 ? parts[1] : "").lowercased().replacingOccurrences(of: ".", with: "")
         var c = URLComponents(string: "https://geocoding-api.open-meteo.com/v1/search")!
-        c.queryItems = [.init(name: "name", value: name), .init(name: "count", value: "8"),
+        c.queryItems = [.init(name: "name", value: name), .init(name: "count", value: "50"),
                         .init(name: "language", value: "en"), .init(name: "format", value: "json")]
         guard let (data, _) = try? await URLSession.shared.data(from: c.url!) else { return [] }
         struct Geo: Decodable {
@@ -304,11 +308,24 @@ enum AppService {
             }
             let results: [R]?
         }
-        return ((try? JSONDecoder().decode(Geo.self, from: data))?.results ?? []).map {
+        let results = (try? JSONDecoder().decode(Geo.self, from: data))?.results ?? []
+        var picked = results
+        if !hint.isEmpty {
+            let stateName = usStateNames[hint]?.lowercased()
+            let matches = results.filter { r in
+                let admin = r.admin1?.lowercased() ?? ""
+                if !admin.isEmpty, admin == hint || admin == stateName || (hint.count >= 3 && admin.hasPrefix(hint)) { return true }
+                return r.country_code?.lowercased() == hint || (r.country?.lowercased().hasPrefix(hint) ?? false)
+            }
+            if !matches.isEmpty { picked = matches }
+        }
+        return picked.prefix(8).map {
             SearchResult(name: $0.name, admin1: $0.admin1, country: $0.country, countryCode: $0.country_code,
                          latitude: $0.latitude, longitude: $0.longitude)
         }
     }
+
+    private static let usStateNames: [String: String] = ["al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California", "co": "Colorado", "ct": "Connecticut", "de": "Delaware", "dc": "District of Columbia", "fl": "Florida", "ga": "Georgia", "hi": "Hawaii", "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa", "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine", "md": "Maryland", "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota", "ms": "Mississippi", "mo": "Missouri", "mt": "Montana", "ne": "Nebraska", "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey", "nm": "New Mexico", "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio", "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island", "sc": "South Carolina", "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas", "ut": "Utah", "vt": "Vermont", "va": "Virginia", "wa": "Washington", "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming"]
 
     // Apple's geocoder; no third-party service involved. "City, ST" in the US, otherwise just the city.
     static func reverseGeocode(_ loc: CLLocation) async -> (name: String, region: String)? {
