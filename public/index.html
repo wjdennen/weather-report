@@ -695,6 +695,7 @@ html, body {
   border-radius: 12px; padding: 12px 16px; margin-bottom: 12px;
   font-size: 14px; line-height: 1.5; color: var(--on-surface-variant);
 }
+.search-note a, .geo-prompt a { color: var(--primary); font-weight: 600; }
 .explore-banner {
   background: var(--glass-bg); border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 20px; text-align: center;
@@ -2313,7 +2314,7 @@ function renderSearch(results = []) {
 
   el.innerHTML = `
     <button class="back-btn" onclick="App.switchTab('home')" aria-label="Back to weather">${msym('arrow_back')} Back</button>
-    ${state.searchNote ? `<div class="search-note" role="status">${escHtml(state.searchNote)}</div>` : ''}
+    ${state.searchNote ? `<div class="search-note" role="status">${escHtml(state.searchNote)} Search for a city or zip code, or try a sample city: <a href="#" class="sample-link" onclick="App.trySample();return false">Newport, RI</a></div>` : ''}
     <div class="search-bar">
       ${msym('search')}
       <input type="text" id="search-input" placeholder="Search by city or zip code" aria-label="Search by city or zip code" autocomplete="off" spellcheck="false"
@@ -2381,6 +2382,12 @@ const App = {
 
   goSearch() { App.switchTab('search'); },
 
+  // Sample place for visitors who can't or won't share location: view only, not saved.
+  trySample() {
+    App.switchTab('home');
+    loadLocation(41.4901, -71.3128, 'Newport, RI', false);
+  },
+
   async useGeo() {
     // Location is optional: when it's unavailable, land on the search tab with a note
     // (focused input) rather than a dead-end screen. The home tab keeps a matching
@@ -2392,7 +2399,7 @@ const App = {
         <div class="geo-prompt">
           ${msym('search')}
           <h2>Where do you want the weather?</h2>
-          <p>Location sharing is off, which is fine. Search for a city or zip code instead.</p>
+          <p>Location sharing is off, which is fine. Search for a city or zip code, or try a sample city: <a href="#" class="sample-link" onclick="App.trySample();return false">Newport, RI</a></p>
           <button class="btn-primary" onclick="App.goSearch()">Search</button>
         </div>`;
       App.goSearch();
@@ -2400,7 +2407,7 @@ const App = {
     };
 
     if (!navigator.geolocation) {
-      showGeoError("Your browser can't share location. Search for a city or zip code instead.");
+      showGeoError("Your browser can't share location.");
       return;
     }
     App.switchTab('home');
@@ -2413,7 +2420,7 @@ const App = {
       try {
         const perm = await navigator.permissions.query({ name: 'geolocation' });
         if (perm.state === 'denied') {
-          showGeoError('Location is turned off for this site. Search for a city or zip code instead.');
+          showGeoError('Location is turned off for this site.');
           return;
         }
       } catch(e) { /* Permissions API unsupported — continue */ }
@@ -2424,7 +2431,7 @@ const App = {
     // the OS permission prompt is dismissed without an explicit Allow/Deny tap.
     const settle = (fn) => { if (!settled) { settled = true; fn(); } };
     const fallback = setTimeout(() => settle(() =>
-      showGeoError('Location took too long. Search for a city or zip code instead.')
+      showGeoError('Location took too long.')
     ), 12000);
 
     navigator.geolocation.getCurrentPosition(async pos => {
@@ -2435,17 +2442,17 @@ const App = {
           const name = await reverseGeocode(lat, lon) || 'Current Location';
           loadLocation(lat, lon, name, true);
         } catch(e) {
-          showGeoError("Couldn't get your location. Search for a city or zip code instead.");
+          showGeoError("Couldn't get your location.");
         }
       });
     }, err => {
       settle(() => {
         clearTimeout(fallback);
         const msg = err.code === 1
-          ? 'Location is turned off for this site. Search for a city or zip code instead.'
+          ? 'Location is turned off for this site.'
           : err.code === 2
-          ? "Couldn't get your location. Search for a city or zip code instead."
-          : 'Location took too long. Search for a city or zip code instead.';
+          ? "Couldn't get your location."
+          : 'Location took too long.';
         showGeoError(msg);
       });
     }, { timeout: 10000, maximumAge: 300000 });
