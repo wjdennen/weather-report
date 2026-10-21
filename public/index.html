@@ -1339,8 +1339,8 @@ async function loadLocation(lat, lon, name, isGeo = false, fresh = false) {
     document.getElementById('app').style.background = atmoGradient(weather.current.weather_code, isDay);
     renderHome();
 
-    // Sunset quality in background: tonight's sunset, or tomorrow's once today's has passed
-    const sunIdx = wallClockNow(weather.utc_offset_seconds) > new Date(weather.daily.sunset[0]) ? 1 : 0;
+    // Sunset quality in background: tonight's sunset (kept for 2h after it happens), then tomorrow's
+    const sunIdx = wallClockNow(weather.utc_offset_seconds) > new Date(new Date(weather.daily.sunset[0]).getTime() + 2 * 3600000) ? 1 : 0;
     fetchSunsetQuality(lat, lon, weather.daily.time[sunIdx]).then(q => {
       if (!stillCurrent() || !q) return;
       state.sunsetQuality = { ...q, tonight: sunIdx === 0 };

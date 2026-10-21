@@ -193,7 +193,7 @@ enum AppService {
     static func fetchSunset(_ p: Place, _ f: FullForecast, _ tz: TimeZone) async -> SunsetQuality? {
         let fmt = timeParser(tz, "yyyy-MM-dd'T'HH:mm")
         guard let first = f.daily.sunset.first, let sunsetToday = fmt.date(from: first) else { return nil }
-        let tonight = Date() <= sunsetToday
+        let tonight = Date() <= sunsetToday.addingTimeInterval(2 * 3600)  // keep tonight's for 2h after sunset
         let idx = tonight ? 0 : 1
         guard idx < f.daily.time.count else { return nil }
         var c = URLComponents(string: WeatherService.sunsetProxy)!
