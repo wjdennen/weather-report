@@ -100,8 +100,9 @@ It needs the Mac awake and the phone on the same Wi-Fi (an unlocked phone is not
 this project's phone; override with `DEVICE=<id>` (see `xcrun devicectl list devices`).
 
 To run it automatically, create `~/Library/LaunchAgents/dev.dennen.weather-report-refresh.plist` (outside the repo,
-so it isn't tracked) that runs `/bin/bash <repo>/scripts/refresh-ios.sh` daily at 10:00 and at login
-(`StartCalendarInterval` Hour 10 / Minute 0, `RunAtLoad` true), then load it:
+so it isn't tracked) that runs `/bin/bash <repo>/scripts/refresh-ios.sh` every hour and at login
+(`StartInterval` 3600, `RunAtLoad` true), then load it. Hourly runs are cheap (the script skips until the last install
+is 3 days old) and give it many chances to catch the phone awake on Wi-Fi:
 
 ```
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/dev.dennen.weather-report-refresh.plist
