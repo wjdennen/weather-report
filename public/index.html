@@ -1164,6 +1164,11 @@ function retryNWSForecast() {
   loadNWSForecast(lat, lon, () => state.loadGen === gen);
 }
 
+// NWS hard-wraps text at ~65 columns; join those single line breaks but keep
+// paragraph breaks (blank lines) and bullet/list lines.
+function unwrapNwsText(t) {
+  return String(t).replace(/\r/g, '').replace(/([^\n])\n(?![\n*\-\u2022]|\s)/g, '$1 ').trim();
+}
 async function fetchAlerts(lat, lon) {
   try {
     const nwsHeaders = { 'User-Agent': '(weather-report, dennen@gmail.com)' };
@@ -2019,7 +2024,7 @@ function renderHome() {
         <div><div class="alert-event">${escHtml(a.event || '')}</div><div class="alert-expires">${escHtml(a.headline?.split(' issued')[0] || '')}${expires}</div></div>
         ${hasDetail ? `<span class="alert-chevron msym" aria-hidden="true" id="alert-chev-${akey}" style="${isOpen ? 'transform:rotate(180deg)' : ''}">expand_more</span>` : ''}
       </div>
-      ${hasDetail ? `<div class="alert-detail" id="alert-body-${akey}" style="display:${isOpen ? 'block' : 'none'}">${escHtml(a.description).replace(/\n/g, '<br>')}</div>` : ''}
+      ${hasDetail ? `<div class="alert-detail" id="alert-body-${akey}" style="display:${isOpen ? 'block' : 'none'}">${escHtml(unwrapNwsText(a.description)).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }).join('');
 

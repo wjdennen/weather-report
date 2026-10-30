@@ -134,6 +134,14 @@ enum AppService {
         return (periods, false)
     }
 
+    /// NWS hard-wraps text at ~65 columns; join those single line breaks but keep
+    /// paragraph breaks (blank lines) and bullet/list lines.
+    static func unwrapNWS(_ t: String) -> String {
+        t.replacingOccurrences(of: "\r", with: "")
+            .replacingOccurrences(of: "([^\\n])\\n(?![\\n*\\-\\u2022\\s])", with: "$1 ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     static func fetchAlerts(_ p: Place) async -> [NWSAlert] {
         guard let url = URL(string: String(format: "https://api.weather.gov/alerts/active?point=%.4f,%.4f", p.lat, p.lon)),
               let (data, resp) = try? await URLSession.shared.data(for: nwsRequest(url)),
@@ -160,7 +168,7 @@ enum AppService {
             // NWS `ends` is when the hazard ends; `expires` is just when the message does.
             let end = (p.ends ?? p.expires).flatMap { isoDate.date(from: $0) }
             return NWSAlert(id: p.id ?? event, event: event, severity: p.severity ?? "",
-                            headline: p.headline ?? "", description: p.description ?? "", ends: end)
+                            headline: p.headline ?? "", description: Self.unwrapNWS(p.description ?? ""), ends: end)
         }
     }
 
